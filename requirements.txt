@@ -1,5 +1,5 @@
 # IVL Identity V Prediction — Python dependencies
-# Setup: pip install -r requirements.txt
+# Setup: python -m pip install -r requirements.txt
 #
 # Also required (install separately):
 #   Tesseract OCR engine
@@ -20,3 +20,8 @@ pytesseract
 
 # Clustering (cluster_label.py)
 scikit-learn
+
+# CLIP-based labeling (clip_label.py)
+torch
+torchvision
+transformers
