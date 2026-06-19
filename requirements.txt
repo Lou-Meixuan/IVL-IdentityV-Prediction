@@ -1,0 +1,22 @@
+# IVL Identity V Prediction — Python dependencies
+# Setup: pip install -r requirements.txt
+#
+# Also required (install separately):
+#   Tesseract OCR engine
+#     macOS:  brew install tesseract
+#     Ubuntu: sudo apt install tesseract-ocr
+#
+#   Playwright browsers (for data_collection.py)
+#     python -m playwright install chromium
+
+# Data collection
+playwright
+requests
+pandas
+
+# Image processing & OCR
+opencv-python
+pytesseract
+
+# Clustering (cluster_label.py)
+scikit-learn
