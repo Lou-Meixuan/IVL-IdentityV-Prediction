@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IVL Match Prediction — Design Document</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #1a1a1a;
+    background: #f9f9f9;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    background: #1a1a1a;
+    color: #fff;
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  .topbar-title { font-weight: 600; font-size: 14px; letter-spacing: 0.5px; }
+
+  .lang-toggle {
+    display: flex;
+    background: #333;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .lang-btn {
+    padding: 6px 16px;
+    border: none;
+    background: transparent;
+    color: #aaa;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .lang-btn.active {
+    background: #fff;
+    color: #1a1a1a;
+    border-radius: 4px;
+  }
+
+  .lang-btn:hover:not(.active) { color: #fff; }
+
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  .lang-content { display: none; }
+  .lang-content.active { display: block; }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #111;
+  }
+
+  .subtitle {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 40px 0 12px;
+    color: #111;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e8e8e8;
+  }
+
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 24px 0 8px;
+    color: #333;
+  }
+
+  p { margin-bottom: 12px; color: #333; }
+
+  pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 18px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 14px 0;
+    font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  }
+
+  code {
+    background: #efefef;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: "SF Mono", "Fira Code", Consolas, monospace;
+    color: #c7254e;
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+
+  th {
+    background: #f0f0f0;
+    text-align: left;
+    padding: 8px 12px;
+    font-weight: 600;
+    border: 1px solid #ddd;
+  }
+
+  td {
+    padding: 7px 12px;
+    border: 1px solid #e8e8e8;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td { background: #fafafa; }
+
+  ul, ol {
+    padding-left: 22px;
+    margin-bottom: 12px;
+  }
+
+  li { margin-bottom: 4px; color: #333; }
+
+  .badge {
+    display: inline-block;
+    background: #e8f4fd;
+    color: #0969da;
+    border: 1px solid #b6d9f7;
+    border-radius: 4px;
+    padding: 1px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-right: 4px;
+  }
+
+  .section-note {
+    background: #fff8e1;
+    border-left: 4px solid #f9c74f;
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-title">IVL — Design Document</span>
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('en')">English</button>
+    <button class="lang-btn" onclick="setLang('cn')">中文</button>
+  </div>
+</div>
+
+<!-- ===================== ENGLISH ===================== -->
+<div id="content-en" class="lang-content active">
+<div class="container">
+
+<h1>IVL Match Prediction</h1>
+<p class="subtitle">Design Document &nbsp;·&nbsp; Last updated June 2026</p>
+
+<h2>Overview</h2>
+<p>This project collects historical match data from IVL (Identity V League) official Bilibili posts, identifies the MVP player from each match image, and builds a structured dataset for future match prediction.</p>
+<p>The pipeline has two stages: automated data collection and semi-supervised MVP labeling.</p>
+
+<h2>Problem Statement</h2>
+<p>IVL match results are published as Bilibili posts containing two images — a scoreboard and an MVP card. There is no official API or structured data source. The MVP player name appears as stylized game-UI text in the image, which standard OCR handles poorly due to the condensed bold font.</p>
+
+<h2>System Architecture</h2>
+<pre>
+Bilibili Posts
+      │
+      ▼
+data_collection.py          ← Stage 1: scrape & download
+      │
+      ├── score_*.png       (scoreboard image)
+      └── mvp.png           (MVP card — name unknown)
+      │
+      ▼
+clip_label.py               ← Stage 2: identify MVP
+      │
+      ├── cluster_sheet_clip.png    (visual contact sheet)
+      ├── cluster_labels_clip.csv   (human-corrected labels)
+      └── cluster_mapping_clip.json (cluster → file paths)
+      │
+      ▼
+csv_output/
+  ├── 2025IVL_Autumn_Finals.csv
+  ├── 2025IVL_Summer_Finals.csv
+  ├── 2025IVL_Autumn.csv
+  └── 2025IVL_Summer.csv
+</pre>
+
+<h2>Components</h2>
+
+<h3>data_collection.py</h3>
+<p>Scrapes the IVL official Bilibili account using Playwright (headless Chromium). Intercepts API responses from <code>opus/feed/space</code> to collect post metadata, then opens each post page to extract real image URLs from HTML.</p>
+
+<table>
+  <tr><th>Function</th><th>Description</th></tr>
+  <tr><td><code>detect_season(text)</code></td><td>Regex-matches Chinese season strings, returns English name e.g. <code>2025IVL_Autumn_Finals</code>. Covers both Finals and Regular Season.</td></tr>
+  <tr><td><code>extract_teams(text)</code></td><td>Parses <code>TeamA vs TeamB</code> from post text, strips Chinese characters</td></tr>
+  <tr><td><code>extract_winner(text)</code></td><td>Finds <code>#Team获胜</code> pattern</td></tr>
+  <tr><td><code>calc_match_score(text)</code></td><td>Parses individual game scores e.g. <code>5:3</code>, computes overall win-loss</td></tr>
+  <tr><td><code>extract_image_urls_from_html(page)</code></td><td>Extracts <code>hdslb.com</code> image URLs directly from page HTML</td></tr>
+  <tr><td><code>download_image(url, path)</code></td><td>Downloads image with timeout</td></tr>
+</table>
+
+<p><strong>Output per match:</strong></p>
+<pre>
+result_images/
+  └── 2025IVL_Autumn_Finals/
+        └── DOU5_vs_FPX.ZQ_1145141919810/
+              ├── score_3-1.png
+              └── mvp.png           ← name unknown, filled later
+</pre>
+
+<p><strong>CSV columns:</strong> <code>match_id, team_a, team_b, date, winner, match_score, game_scores, mvp</code></p>
+<p>The <code>mvp</code> column is left empty at this stage and filled by <code>clip_label.py</code> after labeling.</p>
+<p>CSVs are saved to <code>csv_output/</code>, one file per season (e.g. <code>2025IVL_Autumn_Finals.csv</code>).</p>
+
+<h3>clip_label.py</h3>
+<p>Identifies MVP players from <code>mvp.png</code> images using CLIP embeddings and KMeans clustering, with human correction and automatic CSV update.</p>
+
+<p><strong>Why CLIP instead of raw OCR:</strong> Standard OCR fails on the game's condensed bold UI font. CLIP encodes images into a semantic embedding space where visually similar images — two cards showing the same player — cluster together regardless of background variation.</p>
+
+<p><strong>Pipeline:</strong></p>
+<pre>
+mvp.png images (unlabeled only — already-labeled mvp_*.png are skipped)
+    │
+    ▼
+get_ticket()          HSV mask → find ticket region → crop & resize
+    │
+    ▼
+embed_tickets()       CLIP ViT-B/32 → 512-dim embeddings → L2 normalize
+    │
+    ▼
+PCA(50 dims, seed=42) → KMeans(k=40, seed=42)
+    │
+    ▼
+ocr_ticket()          Tesseract on cluster representative → suggest name
+    │
+    ▼
+cluster_labels_clip.csv   ← human corrects wrong suggestions
+    │
+    ▼
+apply_labels()        rename mvp.png → mvp_{player}.png
+    │
+    ▼
+_update_csv_mvp()     scan filenames → write mvp column to csv_output/*.csv
+</pre>
+
+<p><strong>Commands:</strong></p>
+<pre>
+# Step 1: build embeddings, cluster, generate sheet + CSV
+python clip_label.py --build
+
+# Step 2: open cluster_sheet_clip.png, fix wrong names in cluster_labels_clip.csv
+
+# Step 3: preview renames
+python clip_label.py --apply
+
+# Step 4: apply renames + update CSV
+python clip_label.py --apply --confirm
+</pre>
+
+<table>
+  <tr><th>Output File</th><th>Description</th></tr>
+  <tr><td><code>cluster_sheet_clip.png</code></td><td>Visual grid of cluster representatives</td></tr>
+  <tr><td><code>cluster_labels_clip.csv</code></td><td><code>cluster_id, n_images, player_name</code> — edit this file</td></tr>
+  <tr><td><code>cluster_mapping_clip.json</code></td><td>Maps cluster IDs to file paths</td></tr>
+</table>
+
+<h2>Full Workflow</h2>
+<pre>
+1. python data_collection.py
+   → scrape Bilibili, download images
+   → result_images/{season}/{teamA}_vs_{teamB}_{id}/score_*.png + mvp.png
+   → csv_output/{season}.csv  (mvp column empty)
+
+2. python clip_label.py --build
+   → cluster unlabeled mvp.png files only
+   → generate cluster_sheet_clip.png + cluster_labels_clip.csv
+
+3. open cluster_sheet_clip.png, correct wrong names in cluster_labels_clip.csv
+
+4. python clip_label.py --apply --confirm
+   → rename mvp.png → mvp_{player}.png
+   → write correct MVP names back to csv_output/*.csv
+</pre>
+
+<h2>Folder Structure</h2>
+<pre>
+IVL-IdentityV-Prediction/
+├── data_collection.py
+├── clip_label.py
+├── requirements.txt
+├── DESIGN.html
+│
+├── result_images/
+│   └── 2025IVL_Autumn_Finals/
+│       └── TeamA_vs_TeamB_{id}/
+│           ├── score_*.png
+│           └── mvp_{player}.png   ← renamed after labeling
+│
+├── csv_output/
+│   ├── 2025IVL_Autumn_Finals.csv
+│   ├── 2025IVL_Summer_Finals.csv
+│   ├── 2025IVL_Autumn.csv
+│   └── 2025IVL_Summer.csv
+│
+├── cluster_sheet_clip.png
+├── cluster_labels_clip.csv
+└── cluster_mapping_clip.json
+</pre>
+
+<h2>Design Decisions</h2>
+
+<h3>Why Bilibili scraping instead of an API?</h3>
+<p>IVL has no public data API. The official account posts structured match result images consistently, making it a reliable source.</p>
+
+<h3>Why CLIP for MVP identification?</h3>
+<p>The MVP player name appears as stylized game text that standard OCR cannot reliably read. CLIP embeds images semantically — the same player's card looks similar across matches regardless of background scene. KMeans clustering groups same-player cards together, requiring only one human correction per cluster rather than per image.</p>
+
+<h3>Why semi-supervised instead of fully automated?</h3>
+<p>Background variation in the game causes some same-player cards to split into different clusters. A fully automated approach would require a labeled training set that doesn't exist. The semi-supervised approach (cluster → human label → apply) achieves high accuracy with minimal manual effort (~40 corrections for ~200 images).</p>
+
+<h3>Why separate data collection from labeling?</h3>
+<p>Scraping is slow (requires browser automation) and labeling benefits from reviewing all images at once. Separating the two stages allows each to be re-run independently. Already-labeled images (<code>mvp_*.png</code>) are skipped on subsequent <code>--build</code> runs, so only new images need to be reviewed.</p>
+
+<h3>Why split CSV by season?</h3>
+<p>Regular season and Finals matches have different formats and analytical relevance. Splitting into separate files makes downstream analysis cleaner, and matches the naming of the existing dataset.</p>
+
+<h2>Dependencies</h2>
+<table>
+  <tr><th>Package</th><th>Used for</th></tr>
+  <tr><td><code>playwright</code></td><td>Bilibili scraping</td></tr>
+  <tr><td><code>requests</code></td><td>Image download</td></tr>
+  <tr><td><code>pandas</code></td><td>CSV handling</td></tr>
+  <tr><td><code>opencv-python</code></td><td>Image processing</td></tr>
+  <tr><td><code>pytesseract</code></td><td>OCR suggestions in clip_label.py</td></tr>
+  <tr><td><code>scikit-learn</code></td><td>KMeans, PCA</td></tr>
+  <tr><td><code>torch / torchvision</code></td><td>CLIP model backend</td></tr>
+  <tr><td><code>transformers</code></td><td>CLIP ViT-B/32</td></tr>
+</table>
+
+<pre>
+python -m pip install -r requirements.txt
+brew install tesseract
+python -m playwright install chromium
+</pre>
+
+<h2>Known Limitations</h2>
+<ul>
+  <li>Background scene variation can split the same player into 2–3 clusters, requiring manual merge in <code>cluster_labels_clip.csv</code>.</li>
+  <li>The <code>date</code> column in CSV is currently empty — Bilibili's API response format for timestamps varies.</li>
+  <li>Season detection covers 夏季赛, 秋季赛 (Regular + Finals). Other season formats would need additional patterns in <code>detect_season()</code>.</li>
+</ul>
+
+</div>
+</div>
+
+<!-- ===================== CHINESE ===================== -->
+<div id="content-cn" class="lang-content">
+<div class="container">
+
+<h1>IVL 赛事预测</h1>
+<p class="subtitle">设计文档 &nbsp;·&nbsp; 最后更新 2026 年 6 月</p>
+
+<h2>项目概述</h2>
+<p>本项目从 IVL（第五人格联赛）官方 Bilibili 账号收集历史赛事数据，从每场比赛的图片中识别 MVP 选手，构建结构化数据集，用于未来的赛事预测。</p>
+<p>整个流程分为两个阶段：自动化数据采集 和 半监督 MVP 标注。</p>
+
+<h2>问题背景</h2>
+<p>IVL 赛果以 Bilibili 动态的形式发布，每条动态包含两张图片——比分图和 MVP 图。官方没有提供任何 API 或结构化数据源。MVP 选手名字以游戏 UI 风格的特殊字体出现在图片中，标准 OCR 由于字体为压缩粗体，识别效果很差。</p>
+
+<h2>系统架构</h2>
+<pre>
+Bilibili 动态
+      │
+      ▼
+data_collection.py          ← 第一阶段：抓取 & 下载
+      │
+      ├── score_*.png       （比分图）
+      └── mvp.png           （MVP 图——名字待识别）
+      │
+      ▼
+clip_label.py               ← 第二阶段：识别 MVP
+      │
+      ├── cluster_sheet_clip.png    （聚类可视化图）
+      ├── cluster_labels_clip.csv   （人工校正的标签）
+      └── cluster_mapping_clip.json （cluster ID → 文件路径）
+      │
+      ▼
+csv_output/
+  ├── 2025IVL_Autumn_Finals.csv
+  ├── 2025IVL_Summer_Finals.csv
+  ├── 2025IVL_Autumn.csv
+  └── 2025IVL_Summer.csv
+</pre>
+
+<h2>模块说明</h2>
+
+<h3>data_collection.py</h3>
+<p>使用 Playwright（无头 Chromium）爬取 IVL 官方 Bilibili 账号。拦截 <code>opus/feed/space</code> 的 API 响应获取动态元数据，再打开每条动态页面从 HTML 中提取真实图片链接。</p>
+
+<table>
+  <tr><th>函数</th><th>说明</th></tr>
+  <tr><td><code>detect_season(text)</code></td><td>正则匹配中文赛季字符串，返回英文名，如 <code>2025IVL_Autumn_Finals</code>。同时覆盖总决赛和常规赛。</td></tr>
+  <tr><td><code>extract_teams(text)</code></td><td>从动态文本中解析 <code>队伍A vs 队伍B</code>，去除中文字符</td></tr>
+  <tr><td><code>extract_winner(text)</code></td><td>匹配 <code>#队伍获胜</code> 模式</td></tr>
+  <tr><td><code>calc_match_score(text)</code></td><td>解析单局比分如 <code>5:3</code>，计算总场次胜负</td></tr>
+  <tr><td><code>extract_image_urls_from_html(page)</code></td><td>直接从页面 HTML 中提取 <code>hdslb.com</code> 图片链接</td></tr>
+  <tr><td><code>download_image(url, path)</code></td><td>带超时的图片下载</td></tr>
+</table>
+
+<p><strong>每场比赛的输出：</strong></p>
+<pre>
+result_images/
+  └── 2025IVL_Autumn_Finals/
+        └── DOU5_vs_FPX.ZQ_1145141919810/
+              ├── score_3-1.png
+              └── mvp.png           ← 名字未知，待后续填充
+</pre>
+
+<p><strong>CSV 列：</strong><code>match_id, team_a, team_b, date, winner, match_score, game_scores, mvp</code></p>
+<p><code>mvp</code> 列在此阶段为空，由 <code>clip_label.py</code> 标注完成后填充。</p>
+<p>CSV 保存在 <code>csv_output/</code> 目录下，每个赛季一个文件（如 <code>2025IVL_Autumn_Finals.csv</code>）。</p>
+
+<h3>clip_label.py</h3>
+<p>使用 CLIP embedding + KMeans 聚类对 <code>mvp.png</code> 图片进行 MVP 识别，结合人工校正后自动更新 CSV。</p>
+
+<p><strong>为什么用 CLIP 而不是 OCR：</strong>标准 OCR 对游戏压缩粗体字效果很差。CLIP 将图片编码到语义空间——同一个选手的票据图，无论背景如何变化，embedding 都会相近，从而聚到同一个 cluster。</p>
+
+<p><strong>流程：</strong></p>
+<pre>
+mvp.png（仅处理未标注的图片，已标注的 mvp_*.png 自动跳过）
+    │
+    ▼
+get_ticket()          HSV 掩码 → 找票据区域 → 裁剪 & 缩放
+    │
+    ▼
+embed_tickets()       CLIP ViT-B/32 → 512 维 embedding → L2 归一化
+    │
+    ▼
+PCA(50 维, seed=42) → KMeans(k=40, seed=42)
+    │
+    ▼
+ocr_ticket()          Tesseract 对 cluster 代表图做 OCR → 建议名字
+    │
+    ▼
+cluster_labels_clip.csv   ← 人工修正错误名字
+    │
+    ▼
+apply_labels()        rename mvp.png → mvp_{选手}.png
+    │
+    ▼
+_update_csv_mvp()     扫描文件名 → 写回 csv_output/*.csv 的 mvp 列
+</pre>
+
+<p><strong>运行命令：</strong></p>
+<pre>
+# 第一步：构建 embedding、聚类、生成图表和 CSV
+python clip_label.py --build
+
+# 第二步：打开 cluster_sheet_clip.png，修改 cluster_labels_clip.csv 中的错误名字
+
+# 第三步：预览重命名结果
+python clip_label.py --apply
+
+# 第四步：确认重命名并更新 CSV
+python clip_label.py --apply --confirm
+</pre>
+
+<table>
+  <tr><th>输出文件</th><th>说明</th></tr>
+  <tr><td><code>cluster_sheet_clip.png</code></td><td>各 cluster 代表图的可视化网格</td></tr>
+  <tr><td><code>cluster_labels_clip.csv</code></td><td><code>cluster_id, n_images, player_name</code> ——需要人工编辑</td></tr>
+  <tr><td><code>cluster_mapping_clip.json</code></td><td>cluster ID → 文件路径的映射</td></tr>
+</table>
+
+<h2>完整工作流</h2>
+<pre>
+1. python data_collection.py
+   → 爬取 Bilibili，下载图片
+   → result_images/{赛季}/{队伍A}_vs_{队伍B}_{id}/score_*.png + mvp.png
+   → csv_output/{赛季}.csv  （mvp 列为空）
+
+2. python clip_label.py --build
+   → 仅对未标注的 mvp.png 进行聚类
+   → 生成 cluster_sheet_clip.png 和 cluster_labels_clip.csv
+
+3. 打开 cluster_sheet_clip.png，修正 cluster_labels_clip.csv 中的错误
+
+4. python clip_label.py --apply --confirm
+   → 重命名 mvp.png → mvp_{选手}.png
+   → 将正确的 MVP 名字写回 csv_output/*.csv
+</pre>
+
+<h2>目录结构</h2>
+<pre>
+IVL-IdentityV-Prediction/
+├── data_collection.py
+├── clip_label.py
+├── requirements.txt
+├── DESIGN.html
+│
+├── result_images/
+│   └── 2025IVL_Autumn_Finals/
+│       └── 队伍A_vs_队伍B_{id}/
+│           ├── score_*.png
+│           └── mvp_{选手}.png   ← 标注后重命名
+│
+├── csv_output/
+│   ├── 2025IVL_Autumn_Finals.csv
+│   ├── 2025IVL_Summer_Finals.csv
+│   ├── 2025IVL_Autumn.csv
+│   └── 2025IVL_Summer.csv
+│
+├── cluster_sheet_clip.png
+├── cluster_labels_clip.csv
+└── cluster_mapping_clip.json
+</pre>
+
+<h2>设计决策</h2>
+
+<h3>为什么爬 Bilibili 而不是用 API？</h3>
+<p>IVL 没有公开的数据 API。官方账号固定格式发布赛果动态，是可靠的数据来源。</p>
+
+<h3>为什么用 CLIP 识别 MVP？</h3>
+<p>MVP 选手名以游戏特殊字体显示，标准 OCR 无法可靠识别。CLIP 对图片进行语义编码——同一选手的票据图在不同比赛背景下仍会聚在一起。KMeans 将同一选手的图片归为一个 cluster，只需人工校正一次即可，不需要逐图处理。</p>
+
+<h3>为什么用半监督而不是全自动？</h3>
+<p>游戏背景变化会导致同一选手的图片被分到不同的 cluster。全自动方案需要已标注的训练集，目前不存在。半监督方案（聚类 → 人工标注 → 应用）在约 200 张图片中只需约 40 次人工修正，效率高且准确。</p>
+
+<h3>为什么把数据采集和标注分开？</h3>
+<p>爬取速度慢（需要浏览器自动化），而标注最好在所有图片都下载后统一进行。分离两个阶段可以独立重跑。已标注的图片（<code>mvp_*.png</code>）在下次 <code>--build</code> 时自动跳过，只有新图片需要人工处理。</p>
+
+<h3>为什么按赛季分 CSV？</h3>
+<p>常规赛和总决赛的赛制和分析意义不同。分文件存储让后续分析更清晰，也与现有数据集的命名保持一致。</p>
+
+<h2>依赖</h2>
+<table>
+  <tr><th>包</th><th>用途</th></tr>
+  <tr><td><code>playwright</code></td><td>Bilibili 爬取</td></tr>
+  <tr><td><code>requests</code></td><td>图片下载</td></tr>
+  <tr><td><code>pandas</code></td><td>CSV 处理</td></tr>
+  <tr><td><code>opencv-python</code></td><td>图像处理</td></tr>
+  <tr><td><code>pytesseract</code></td><td>clip_label.py 中的 OCR 建议</td></tr>
+  <tr><td><code>scikit-learn</code></td><td>KMeans、PCA</td></tr>
+  <tr><td><code>torch / torchvision</code></td><td>CLIP 模型后端</td></tr>
+  <tr><td><code>transformers</code></td><td>CLIP ViT-B/32</td></tr>
+</table>
+
+<pre>
+python -m pip install -r requirements.txt
+brew install tesseract
+python -m playwright install chromium
+</pre>
+
+<h2>已知局限</h2>
+<ul>
+  <li>游戏背景变化可能导致同一选手被分到 2-3 个不同 cluster，需要在 <code>cluster_labels_clip.csv</code> 中手动合并。</li>
+  <li>CSV 中的 <code>date</code> 列目前为空——Bilibili API 返回的时间戳字段格式不稳定。</li>
+  <li>赛季识别目前覆盖夏季赛、秋季赛（常规赛 + 总决赛）。其他赛季格式需要在 <code>detect_season()</code> 中补充 pattern。</li>
+</ul>
+
+</div>
+</div>
+
+<script>
+  function setLang(lang) {
+    document.querySelectorAll('.lang-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('content-' + lang).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+
+</body>
+</html>

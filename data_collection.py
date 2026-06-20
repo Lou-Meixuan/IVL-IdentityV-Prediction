@@ -1,22 +1,21 @@
 """
-IVL Bilibili 赛果抓取脚本（OCR.Space API 版）
+IVL Bilibili match result scraper
 
-功能：
-- 抓取 IVL 赛果公示
-- 每场比赛下载两张图片
-- 第一张：比分图
-- 第二张：MVP 图
-- OCR 自动识别 MVP
-- 输出 CSV
+Features:
+- Scrape IVL match result posts from Bilibili
+- Download two images per match
+  - Image 1: score
+  - Image 2: MVP
+- OCR to identify MVP player
+- Output CSV
 
-优化：
-✓ HTML 直接提取真实图片
-✓ OCR.Space API
-✓ 只 OCR MVP 区域
-✓ 自动补 _
-✓ OCR 自动纠错
-✓ 过滤 (1/2) 分篇帖子
-✓ 每场比赛独立文件夹
+Optimizations:
+- Extract real image URLs directly from HTML
+- OCR only the MVP region
+- Auto-insert underscore in player ID
+- OCR error correction
+- Filter out part-1-of-2 posts
+- Each match gets its own folder
 """
 
 from playwright.sync_api import sync_playwright
@@ -26,241 +25,32 @@ import os
 import re
 import pandas as pd
 from datetime import datetime
-import cv2
-import unicodedata
 
 
 # =====================================
-# 配置
+# Config
 # =====================================
 
 SAVE_DIR = "result_images"
-OUTPUT_CSV = "2025ivl_总决赛结果.csv"
+CSV_DIR  = "csv_output"
 JSON_DUMP = "all_bilibili_dynamic.json"
 
 BILIBILI_UID = "105022844"
 
-SCROLL_COUNT = 75
+SCROLL_COUNT = 100
 
-OCR_API_KEY = "helloworld"
+# Set to a specific year (e.g. 2025) to only collect that year's matches.
+# Set to None to collect all years.
+TARGET_YEAR = 2025
 
 os.makedirs(SAVE_DIR, exist_ok=True)
+os.makedirs(CSV_DIR, exist_ok=True)
 
 all_items: list[dict] = []
 
 
 # =====================================
-# MVP OCR 配置
-# =====================================
-
-TEAM_PREFIXES = [
-    "Gr",
-    "WBG",
-    "ACT",
-    "DOU5",
-    "FPX.ZQ",
-    "TE",
-    "GW",
-    "MRC",
-    "GG",
-    "Wolves",
-]
-
-PLAYER_ID_RE = re.compile(
-    r"^[A-Za-z0-9.]{1,10}_[A-Za-z0-9]{2,16}$"
-)
-
-
-# =====================================
-# 裁切 MVP 区域
-# =====================================
-
-def crop_mvp_region(image_path: str):
-
-    img = cv2.imread(image_path)
-
-    if img is None:
-        return None
-
-    h, w = img.shape[:2]
-
-    crop = img[
-        int(h * 0.14):int(h * 0.36),
-        int(w * 0.08):int(w * 0.60)
-    ]
-
-    # 放大
-    crop = cv2.resize(
-        crop,
-        None,
-        fx=6,
-        fy=6,
-        interpolation=cv2.INTER_CUBIC
-    )
-
-    # 灰度
-    gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-
-    # 锐化
-    kernel = cv2.getStructuringElement(
-        cv2.MORPH_RECT,
-        (2, 2)
-    )
-
-    gray = cv2.morphologyEx(
-        gray,
-        cv2.MORPH_CLOSE,
-        kernel
-    )
-
-    # 二值化
-    _, thresh = cv2.threshold(
-        gray,
-        180,
-        255,
-        cv2.THRESH_BINARY
-    )
-
-    cv2.imwrite("debug_crop.png", thresh)
-
-    return thresh
-
-# =====================================
-# 新增：OCR 后处理
-# =====================================
-
-def clean_ocr_text(text: str):
-
-    # Unicode 转 ASCII
-    text = unicodedata.normalize(
-        "NFKD",
-        text
-    ).encode(
-        "ascii",
-        "ignore"
-    ).decode()
-
-    text = text.strip()
-
-    # 去空格换行
-    text = text.replace(" ", "")
-    text = text.replace("\n", "")
-
-    # 去垃圾符号
-    text = text.replace("-", "")
-    text = text.replace("—", "")
-    text = text.replace("~", "")
-    text = text.replace("{", "")
-    text = text.replace("}", "")
-    text = text.replace("|", "")
-    text = text.replace("'", "")
-    text = text.replace("`", "")
-
-    # 只保留：
-    # 英文 数字 . _
-    text = re.sub(
-        r"[^A-Za-z0-9._]",
-        "",
-        text
-    )
-
-    # 自动补 _
-    if "_" not in text:
-
-        for team in TEAM_PREFIXES:
-
-            if text.upper().startswith(
-                team.upper()
-            ):
-
-                remain = text[len(team):]
-
-                if len(remain) >= 2:
-
-                    text = (
-                        team + "_" + remain
-                    )
-
-                    break
-
-    return text
-
-# =====================================
-# OCR.Space API
-# =====================================
-
-def ocr_mvp_from_image(image_path: str) -> str | None:
-
-    try:
-
-        crop = crop_mvp_region(image_path)
-
-        if crop is None:
-            return None
-
-        temp_path = "temp_mvp.png"
-
-        cv2.imwrite(temp_path, crop)
-
-        url = "https://api.ocr.space/parse/image"
-
-        with open(temp_path, "rb") as f:
-
-            response = requests.post(
-                url,
-                files={
-                    "temp_mvp.png": f
-                },
-                data={
-                    "apikey": OCR_API_KEY,
-                    "language": "eng",
-                    "isOverlayRequired": False,
-                    "OCREngine": 2,
-                    "scale": True,
-                }
-            )
-
-        result = response.json()
-
-        parsed = result.get("ParsedResults")
-
-        if not parsed:
-            return None
-
-        text = parsed[0]["ParsedText"]
-
-        if not text:
-            return None
-
-        text = clean_ocr_text(text)
-
-        # 自动补 _
-        if "_" not in text:
-
-            for team in TEAM_PREFIXES:
-
-                if text.lower().startswith(team.lower()):
-
-                    remain = text[len(team):]
-
-                    if len(remain) >= 2:
-
-                        text = team + "_" + remain
-                        break
-
-        print(f"    OCR API RESULT: {text}")
-
-        return text
-
-    except Exception as e:
-
-        print(f"  ✗ OCR失败: {e}")
-
-        return None
-
-
-# =====================================
-# 下载图片
+# Download image
 # =====================================
 
 def download_image(url: str, filepath: str) -> bool:
@@ -274,38 +64,47 @@ def download_image(url: str, filepath: str) -> bool:
         with open(filepath, "wb") as f:
             f.write(resp.content)
 
-        print(f"  ↓ {filepath}")
+        print(f"  -> {filepath}")
 
         return True
 
     except Exception as e:
 
-        print(f"  ✗ 下载失败 {url} ({e})")
+        print(f"  x Download failed {url} ({e})")
 
         return False
 
 
 # =====================================
-# 检测赛季
+# Detect season
 # =====================================
+
+# Maps Chinese season keywords to English folder names
+# More specific patterns must come first (Finals before Regular)
+_SEASON_EN = [
+    ("夏季赛总决赛", "Summer_Finals"),
+    ("秋季赛总决赛", "Autumn_Finals"),
+    ("夏季赛",       "Summer"),
+    ("秋季赛",       "Autumn"),
+]
+
 
 def detect_season(text: str) -> str | None:
 
-    for pattern in [
-        r"\d{4}IVL夏季赛总决赛",
-        r"\d{4}IVL秋季赛总决赛"
-    ]:
+    year_m = re.search(r"(\d{4})IVL", text)
+    if not year_m:
+        return None
+    year = year_m.group(1)
 
-        m = re.search(pattern, text)
-
-        if m:
-            return m.group(0)
+    for cn, en in _SEASON_EN:
+        if cn in text:
+            return f"{year}IVL_{en}"
 
     return None
 
 
 # =====================================
-# 提取日期
+# Extract publish date
 # =====================================
 
 def extract_pub_date(item: dict) -> str | None:
@@ -333,7 +132,7 @@ def extract_pub_date(item: dict) -> str | None:
 
 
 # =====================================
-# HTML 提取真实图片
+# Extract real image URLs from HTML
 # =====================================
 
 def extract_image_urls_from_html(page, debug=False) -> list[str]:
@@ -346,7 +145,7 @@ def extract_image_urls_from_html(page, debug=False) -> list[str]:
     )
 
     if debug:
-        print(f"\n[HTML] 原始匹配数量: {len(matches)}")
+        print(f"\n[HTML] raw matches: {len(matches)}")
 
     img_urls = []
 
@@ -377,7 +176,7 @@ def extract_image_urls_from_html(page, debug=False) -> list[str]:
 
 
 # =====================================
-# 队名处理
+# Team name cleaning
 # =====================================
 
 _TEAM_NOISE = re.compile(
@@ -386,14 +185,17 @@ _TEAM_NOISE = re.compile(
 
 
 def _clean_team(raw: str) -> str:
-
-    return _TEAM_NOISE.sub("", raw).strip()
+    # remove match-type noise words
+    raw = _TEAM_NOISE.sub("", raw).strip()
+    # remove any remaining Chinese characters
+    raw = re.sub(r'[一-鿿]+', '', raw)
+    return raw.strip()
 
 
 def extract_teams(text: str):
 
     m = re.search(
-        r"([\w\u4e00-\u9fff.]+)\s*[Vv][Ss]\s*([\w\u4e00-\u9fff.]+)",
+        r"([\w一-鿿.]+)\s*[Vv][Ss]\s*([\w一-鿿.]+)",
         text
     )
 
@@ -410,7 +212,7 @@ def extract_teams(text: str):
 def extract_winner(text: str):
 
     m = re.search(
-        r"#([\w\u4e00-\u9fff.]+)获胜",
+        r"#([\w一-鿿.]+)获胜",
         text
     )
 
@@ -418,7 +220,7 @@ def extract_winner(text: str):
 
 
 # =====================================
-# 计算 BO 分数
+# Calculate BO match score
 # =====================================
 
 def calc_match_score(text: str):
@@ -455,7 +257,7 @@ def calc_match_score(text: str):
 
 
 # =====================================
-# 文件夹安全名
+# Safe folder name (strip forbidden chars)
 # =====================================
 
 def safe_folder_name(s: str):
@@ -468,11 +270,11 @@ def safe_folder_name(s: str):
 
 
 # =====================================
-# Playwright 抓取动态
+# Playwright: scrape Bilibili dynamics
 # =====================================
 
 print("=" * 50)
-print("开始抓取 Bilibili 动态……")
+print("Scraping Bilibili dynamics...")
 print("=" * 50)
 
 with sync_playwright() as p:
@@ -497,11 +299,11 @@ with sync_playwright() as p:
 
                 all_items.extend(items)
 
-                print(f"  +{len(items)} 条（累计 {len(all_items)} 条）")
+                print(f"  +{len(items)} items (total: {len(all_items)})")
 
             except Exception as e:
 
-                print(f"  解析失败: {e}")
+                print(f"  parse failed: {e}")
 
     page.on("response", handle_response)
 
@@ -516,13 +318,13 @@ with sync_playwright() as p:
         page.wait_for_timeout(2000)
 
         if (i + 1) % 10 == 0:
-            print(f"  已滚动 {i+1}/{SCROLL_COUNT} 次")
+            print(f"  scrolled {i+1}/{SCROLL_COUNT}")
 
     browser.close()
 
 
 # =====================================
-# 保存 JSON
+# Save raw JSON
 # =====================================
 
 with open(JSON_DUMP, "w", encoding="utf-8") as f:
@@ -534,11 +336,11 @@ with open(JSON_DUMP, "w", encoding="utf-8") as f:
         indent=2
     )
 
-print(f"\n原始 JSON 已保存：{JSON_DUMP}")
+print(f"\nRaw JSON saved: {JSON_DUMP}")
 
 
 # =====================================
-# 第二浏览器
+# Second browser for post pages
 # =====================================
 
 playwright2 = sync_playwright().start()
@@ -551,7 +353,7 @@ page2 = browser2.new_page()
 
 
 # =====================================
-# 解析赛果
+# Parse match results
 # =====================================
 
 results: list[dict] = []
@@ -569,10 +371,10 @@ for item in all_items:
         if not season:
             continue
 
-        if "赛果公示" not in text:
+        if TARGET_YEAR and not season.startswith(str(TARGET_YEAR)):
             continue
 
-        if "总决赛" not in text:
+        if "赛果公示" not in text:
             continue
 
         if "（1/2）" in text:
@@ -582,7 +384,7 @@ for item in all_items:
             continue
 
         print("\n" + "=" * 50)
-        print(f"[命中] {season}")
+        print(f"[match] {season}")
 
         team_a, team_b = extract_teams(text)
 
@@ -592,12 +394,10 @@ for item in all_items:
 
         date = extract_pub_date(item)
 
-        # =====================================
-        # 新文件夹结构
+        # Folder structure:
         # result_images/
-        #   └── 2025IVL秋季赛/
+        #   └── 2025IVL_Autumn_Finals/
         #         └── DOU5_vs_FPX.ZQ_1145xxx/
-        # =====================================
 
         season_dir = os.path.join(
             SAVE_DIR,
@@ -619,7 +419,7 @@ for item in all_items:
 
         opus_url = f"https://www.bilibili.com/opus/{opus_id}"
 
-        print(f"  打开帖子页面：{opus_url}")
+        print(f"  opening post: {opus_url}")
 
         page2.goto(
             opus_url,
@@ -661,37 +461,14 @@ for item in all_items:
                 tmp_paths.append(tmp_path)
 
         print(
-            f"  共下载图片：{len(tmp_paths)} 张"
+            f"  downloaded: {len(tmp_paths)} image(s)"
         )
 
         # =====================================
-        # OCR MVP
+        # Rename images
         # =====================================
 
-        mvp = None
-
-        if len(tmp_paths) >= 2:
-
-            print("  OCR 第二张图……")
-
-            mvp = ocr_mvp_from_image(
-                tmp_paths[1]
-            )
-
-            if mvp:
-                print(f"  ✓ MVP={mvp}")
-
-        elif len(tmp_paths) == 1:
-
-            print("  只有一张图，OCR……")
-
-            mvp = ocr_mvp_from_image(
-                tmp_paths[0]
-            )
-
-        # =====================================
-        # 重命名图片
-        # =====================================
+        mvp = None  # will be filled later by clip_label.py
 
         final_paths = []
 
@@ -702,7 +479,7 @@ for item in all_items:
             new_name = (
                 f"score_{match_score}.{ext}"
                 if idx == 0
-                else f"mvp_{safe_folder_name(mvp or 'unknown')}.{ext}"
+                else f"mvp.{ext}"
             )
 
             new_path = os.path.join(
@@ -734,13 +511,13 @@ for item in all_items:
 
     except Exception as e:
 
-        print(f"  ✗ 处理出错：{e}")
+        print(f"  x error: {e}")
 
         continue
 
 
 # =====================================
-# 输出 CSV
+# Output CSV
 # =====================================
 
 OUTPUT_COLS = [
@@ -757,14 +534,12 @@ OUTPUT_COLS = [
 df = pd.DataFrame(results)
 
 print(f"\n{'='*50}")
-
-print(f"共抓取动态：{len(all_items)} 条")
-
-print(f"赛果公示命中：{len(results)} 条")
+print(f"Total dynamics scraped: {len(all_items)}")
+print(f"Match results found: {len(results)}")
 
 if df.empty:
 
-    print("\n⚠️ 未匹配到任何赛果公示")
+    print("\nNo match results found.")
 
 else:
 
@@ -775,24 +550,20 @@ else:
     ]).reset_index(drop=True)
 
     print("\nFINAL RESULTS")
+    print(df[OUTPUT_COLS].to_string(index=False))
 
-    print(
-        df[OUTPUT_COLS].to_string(index=False)
-    )
+    # Split into one CSV per season and save to csv_output/
+    for season_name, group in df.groupby("season"):
+        filename = f"{season_name}.csv"
+        filepath = os.path.join(CSV_DIR, filename)
+        group[OUTPUT_COLS].to_csv(filepath, index=False, encoding="utf-8-sig")
+        print(f"\nCSV saved: {filepath} ({len(group)} matches)")
 
-    df[OUTPUT_COLS].to_csv(
-        OUTPUT_CSV,
-        index=False,
-        encoding="utf-8-sig"
-    )
-
-    print(f"\nCSV 已保存：{OUTPUT_CSV}")
-
-    print(f"图片已保存至：{SAVE_DIR}/")
+    print(f"\nImages saved to: {SAVE_DIR}/")
 
 
 browser2.close()
 
 playwright2.stop()
 
-print("\nDONE ✓")
+print("\nDONE")

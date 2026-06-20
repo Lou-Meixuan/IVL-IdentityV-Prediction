@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Use — IVL Match Prediction</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0d0d0d;
+    color: #e8e8e8;
+    line-height: 1.7;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(13,13,13,0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #222;
+    padding: 14px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 100;
+  }
+
+  .topbar-title { font-weight: 700; font-size: 15px; color: #fff; }
+
+  .topbar-links { display: flex; gap: 20px; align-items: center; }
+  .topbar-links a {
+    color: #888;
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s;
+  }
+  .topbar-links a:hover { color: #fff; }
+
+  .lang-toggle {
+    display: flex;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-left: 20px;
+  }
+
+  .lang-btn {
+    padding: 5px 14px;
+    border: none;
+    background: transparent;
+    color: #666;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .lang-btn.active { background: #fff; color: #0d0d0d; border-radius: 4px; }
+  .lang-btn:hover:not(.active) { color: #ccc; }
+
+  /* ── Layout ── */
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 60px 40px 100px;
+  }
+
+  .page-header {
+    margin-bottom: 56px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid #1e1e1e;
+  }
+
+  .page-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 12px;
+  }
+
+  .page-header h1 {
+    font-size: 36px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+    margin-bottom: 12px;
+  }
+
+  .page-header p { color: #666; font-size: 15px; }
+
+  /* ── Steps ── */
+  .step-group {
+    margin-bottom: 52px;
+  }
+
+  .step-group-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .step-group-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    color: #0d0d0d;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .step-group-title h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .step-body { padding-left: 40px; }
+  .step-body p { color: #888; font-size: 14px; margin-bottom: 14px; }
+
+  /* ── Code blocks ── */
+  .code-block {
+    background: #111;
+    border: 1px solid #1e1e1e;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 14px 0;
+  }
+
+  .code-label {
+    padding: 8px 16px;
+    background: #161616;
+    border-bottom: 1px solid #1e1e1e;
+    font-size: 11px;
+    color: #555;
+    font-family: "SF Mono", Consolas, monospace;
+    letter-spacing: 0.3px;
+  }
+
+  pre {
+    padding: 16px 20px;
+    font-size: 13px;
+    font-family: "SF Mono", "Fira Code", Consolas, monospace;
+    color: #a8c7fa;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  pre .comment { color: #555; }
+  pre .cmd { color: #a8c7fa; }
+
+  code {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    color: #a8c7fa;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: "SF Mono", Consolas, monospace;
+  }
+
+  /* ── Prereq list ── */
+  .prereq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .prereq-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #111;
+    border: 1px solid #1e1e1e;
+    border-radius: 8px;
+  }
+
+  .prereq-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .prereq-item h4 { font-size: 13px; font-weight: 600; color: #ddd; margin-bottom: 2px; }
+  .prereq-item p { font-size: 12px; color: #666; margin: 0; }
+
+  /* ── Note / warning ── */
+  .note {
+    background: #111;
+    border: 1px solid #2a2a1a;
+    border-left: 3px solid #f9c74f;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #888;
+    margin: 14px 0;
+  }
+
+  .note strong { color: #f9c74f; }
+
+  /* ── Output box ── */
+  .output-box {
+    background: #111;
+    border: 1px solid #1e1e1e;
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 13px;
+    font-family: "SF Mono", Consolas, monospace;
+    color: #666;
+    line-height: 1.8;
+    margin: 14px 0;
+  }
+
+  .output-box .hl { color: #a8c7fa; }
+  .output-box .ok { color: #4ade80; }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid #1a1a1a;
+    margin: 52px 0;
+  }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid #1a1a1a;
+    padding: 28px 40px;
+    text-align: center;
+    color: #444;
+    font-size: 13px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  footer a { color: #555; text-decoration: none; }
+  footer a:hover { color: #888; }
+
+  .lang-content { display: none; }
+  .lang-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-title">IVL Prediction</span>
+  <div style="display:flex;align-items:center;">
+    <div class="topbar-links">
+      <a href="index.html">← Home</a>
+      <a href="design.html">Design Doc</a>
+      <a href="https://github.com/Lou-Meixuan/IVL-IdentityV-Prediction" target="_blank">GitHub ↗</a>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en', event)">EN</button>
+      <button class="lang-btn" onclick="setLang('cn', event)">中文</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ENGLISH ═══════════════ -->
+<div id="content-en" class="lang-content active">
+<div class="page">
+
+  <div class="page-header">
+    <div class="page-label">Guide</div>
+    <h1>How to Use</h1>
+    <p>Step-by-step instructions for setting up the environment and running the full pipeline.</p>
+  </div>
+
+  <!-- Step 0: Prerequisites -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">0</div>
+      <h2>Prerequisites</h2>
+    </div>
+    <div class="step-body">
+      <p>Make sure you have the following installed before running anything.</p>
+      <div class="prereq-list">
+        <div class="prereq-item">
+          <div class="prereq-icon">🐍</div>
+          <div>
+            <h4>Python 3.10+</h4>
+            <p>Recommended: use a conda environment. <code>conda create -n ivl python=3.10</code></p>
+          </div>
+        </div>
+        <div class="prereq-item">
+          <div class="prereq-icon">📦</div>
+          <div>
+            <h4>Python packages</h4>
+            <p><code>python -m pip install -r requirements.txt</code></p>
+          </div>
+        </div>
+        <div class="prereq-item">
+          <div class="prereq-icon">🔤</div>
+          <div>
+            <h4>Tesseract OCR</h4>
+            <p>macOS: <code>brew install tesseract</code></p>
+          </div>
+        </div>
+        <div class="prereq-item">
+          <div class="prereq-icon">🌐</div>
+          <div>
+            <h4>Playwright browser</h4>
+            <p><code>python -m playwright install chromium</code></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Step 1: data_collection -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">1</div>
+      <h2>Scrape & Download</h2>
+    </div>
+    <div class="step-body">
+      <p>Run <code>data_collection.py</code> to scrape match posts from Bilibili, parse scores and team names, and download scoreboard + MVP images for each match.</p>
+
+      <div class="code-block">
+        <div class="code-label">terminal</div>
+        <pre><span class="cmd">python data_collection.py</span></pre>
+      </div>
+
+      <p>This will open a Chromium browser window and scroll through the IVL Bilibili account automatically. Do not close it.</p>
+
+      <p>When done, you will have:</p>
+      <div class="output-box">
+        result_images/<br>
+        &nbsp;&nbsp;└── <span class="hl">2025IVL_Autumn_Finals/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="hl">DOU5_vs_FPX.ZQ_1145xxx/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── score_3-1.png<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── mvp.png<br>
+        <br>
+        csv_output/<br>
+        &nbsp;&nbsp;└── <span class="hl">2025IVL_Autumn_Finals.csv</span> &nbsp;<span class="comment">(mvp column empty)</span>
+      </div>
+
+      <div class="note"><strong>Note:</strong> The <code>mvp</code> column in the CSV will be empty at this stage. It gets filled in Step 3.</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Step 2: clip_label --build -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">2</div>
+      <h2>Cluster MVP Images</h2>
+    </div>
+    <div class="step-body">
+      <p>Run <code>clip_label.py --build</code> to encode all unlabeled <code>mvp.png</code> images with CLIP, then group them into clusters. Already-labeled images are automatically skipped.</p>
+
+      <div class="code-block">
+        <div class="code-label">terminal</div>
+        <pre><span class="cmd">python clip_label.py --build</span></pre>
+      </div>
+
+      <p>This generates three output files:</p>
+      <div class="output-box">
+        <span class="ok">✓</span> cluster_sheet_clip.png &nbsp;&nbsp;<span class="comment">← visual grid of clusters</span><br>
+        <span class="ok">✓</span> cluster_labels_clip.csv &nbsp;<span class="comment">← pre-filled with OCR suggestions</span><br>
+        <span class="ok">✓</span> cluster_mapping_clip.json <span class="comment">← internal mapping</span>
+      </div>
+
+      <div class="note"><strong>Note:</strong> The CLIP model (~600MB) will be downloaded automatically on first run from HuggingFace. This only happens once.</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Step 3: review -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">3</div>
+      <h2>Review & Correct</h2>
+    </div>
+    <div class="step-body">
+      <p>Open <code>cluster_sheet_clip.png</code> to see which images belong to each cluster. Then open <code>cluster_labels_clip.csv</code> and fix any wrong player names in the <code>player_name</code> column.</p>
+
+      <div class="output-box">
+        cluster_id &nbsp;| n_images | player_name<br>
+        ──────────────────────────────────<br>
+        0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 8 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="hl">ACT_zz9</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← correct</span><br>
+        1 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 6 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="hl">DOU5_mhxm</span> &nbsp;<span class="comment">← correct</span><br>
+        2 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 5 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="hl">WBGNIe</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← fix to WBG_NIe</span>
+      </div>
+
+      <div class="note"><strong>Tip:</strong> If the same player appears in two clusters, give both rows the same name — they will be merged when you apply.</div>
+
+      <p>Preview what will be renamed before committing:</p>
+      <div class="code-block">
+        <div class="code-label">terminal</div>
+        <pre><span class="cmd">python clip_label.py --apply</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Step 4: apply -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">4</div>
+      <h2>Apply & Export</h2>
+    </div>
+    <div class="step-body">
+      <p>Once the labels look correct, run with <code>--confirm</code> to rename all image files and write the MVP names back into the CSV.</p>
+
+      <div class="code-block">
+        <div class="code-label">terminal</div>
+        <pre><span class="cmd">python clip_label.py --apply --confirm</span></pre>
+      </div>
+
+      <p>After this, your dataset is complete:</p>
+      <div class="output-box">
+        csv_output/<br>
+        &nbsp;&nbsp;└── 2025IVL_Autumn_Finals.csv<br>
+        <br>
+        match_id &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| team_a | team_b | winner | mvp<br>
+        ─────────────────────────────────────────────<br>
+        1103477862... &nbsp;| TE &nbsp;&nbsp;&nbsp;&nbsp;| GG &nbsp;&nbsp;&nbsp;&nbsp;| GG &nbsp;&nbsp;&nbsp;&nbsp;| <span class="ok">GG_xawm</span><br>
+        1103539022... &nbsp;| Gr &nbsp;&nbsp;&nbsp;&nbsp;| MRC &nbsp;&nbsp;&nbsp;| MRC &nbsp;&nbsp;&nbsp;| <span class="ok">MRC_Bailu</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- New data -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">+</div>
+      <h2>Adding New Data Later</h2>
+    </div>
+    <div class="step-body">
+      <p>When new matches are available (e.g. next season), just repeat the same steps. Already-labeled images are automatically skipped in Step 2 — only the new <code>mvp.png</code> files will be clustered.</p>
+      <p>New seasons get their own CSV file automatically (e.g. <code>2026IVL_Autumn_Finals.csv</code>). Existing CSVs are not affected.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <a href="index.html">← Home</a> &nbsp;·&nbsp;
+  <a href="design.html">Design Doc</a> &nbsp;·&nbsp;
+  <a href="https://github.com/Lou-Meixuan/IVL-IdentityV-Prediction" target="_blank">GitHub ↗</a>
+</footer>
+</div>
+
+<!-- ═══════════════ CHINESE ═══════════════ -->
+<div id="content-cn" class="lang-content">
+<div class="page">
+
+  <div class="page-header">
+    <div class="page-label">使用指南</div>
+    <h1>如何使用</h1>
+    <p>从环境配置到完整运行流程的逐步说明。</p>
+  </div>
+
+  <!-- Step 0 -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">0</div>
+      <h2>环境准备</h2>
+    </div>
+    <div class="step-body">
+      <p>运行前请确保以下依赖已安装。</p>
+      <div class="prereq-list">
+        <div class="prereq-item">
+          <div class="prereq-icon">🐍</div>
+          <div>
+            <h4>Python 3.10+</h4>
+            <p>推荐使用 conda 环境：<code>conda create -n ivl python=3.10</code></p>
+          </div>
+        </div>
+        <div class="prereq-item">
+          <div class="prereq-icon">📦</div>
+          <div>
+            <h4>Python 依赖包</h4>
+            <p><code>python -m pip install -r requirements.txt</code></p>
+          </div>
+        </div>
+        <div class="prereq-item">
+          <div class="prereq-icon">🔤</div>
+          <div>
+            <h4>Tesseract OCR</h4>
+            <p>macOS：<code>brew install tesseract</code></p>
+          </div>
+        </div>
+        <div class="prereq-item">
+          <div class="prereq-icon">🌐</div>
+          <div>
+            <h4>Playwright 浏览器</h4>
+            <p><code>python -m playwright install chromium</code></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Step 1 -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">1</div>
+      <h2>爬取并下载数据</h2>
+    </div>
+    <div class="step-body">
+      <p>运行 <code>data_collection.py</code>，从 Bilibili 爬取赛果动态，解析比分和队伍名称，并下载每场比赛的比分图和 MVP 图。</p>
+
+      <div class="code-block">
+        <div class="code-label">终端</div>
+        <pre><span class="cmd">python data_collection.py</span></pre>
+      </div>
+
+      <p>程序会自动打开 Chromium 浏览器并滚动 IVL 官方 Bilibili 账号页面，请勿关闭窗口。</p>
+
+      <p>运行完成后，会生成以下文件：</p>
+      <div class="output-box">
+        result_images/<br>
+        &nbsp;&nbsp;└── <span class="hl">2025IVL_Autumn_Finals/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="hl">DOU5_vs_FPX.ZQ_1145xxx/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── score_3-1.png<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── mvp.png<br>
+        <br>
+        csv_output/<br>
+        &nbsp;&nbsp;└── <span class="hl">2025IVL_Autumn_Finals.csv</span> &nbsp;<span class="comment">（mvp 列为空）</span>
+      </div>
+
+      <div class="note"><strong>注意：</strong>此阶段 CSV 的 <code>mvp</code> 列为空，将在第 3 步填充。</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Step 2 -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">2</div>
+      <h2>聚类 MVP 图片</h2>
+    </div>
+    <div class="step-body">
+      <p>运行 <code>clip_label.py --build</code>，用 CLIP 对所有未标注的 <code>mvp.png</code> 图片做 embedding 并聚类。已标注的图片会自动跳过。</p>
+
+      <div class="code-block">
+        <div class="code-label">终端</div>
+        <pre><span class="cmd">python clip_label.py --build</span></pre>
+      </div>
+
+      <p>生成三个输出文件：</p>
+      <div class="output-box">
+        <span class="ok">✓</span> cluster_sheet_clip.png &nbsp;&nbsp;<span class="comment">← 聚类可视化图</span><br>
+        <span class="ok">✓</span> cluster_labels_clip.csv &nbsp;<span class="comment">← OCR 预填的名字建议</span><br>
+        <span class="ok">✓</span> cluster_mapping_clip.json <span class="comment">← 内部映射文件</span>
+      </div>
+
+      <div class="note"><strong>注意：</strong>首次运行会从 HuggingFace 自动下载 CLIP 模型（约 600MB），之后不再重复下载。</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Step 3 -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">3</div>
+      <h2>人工校正</h2>
+    </div>
+    <div class="step-body">
+      <p>打开 <code>cluster_sheet_clip.png</code> 查看每个 cluster 对应的图片，再打开 <code>cluster_labels_clip.csv</code>，在 <code>player_name</code> 列修正错误的选手名。</p>
+
+      <div class="output-box">
+        cluster_id &nbsp;| n_images | player_name<br>
+        ──────────────────────────────────<br>
+        0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 8 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="hl">ACT_zz9</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← 正确</span><br>
+        1 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 6 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="hl">DOU5_mhxm</span> &nbsp;<span class="comment">← 正确</span><br>
+        2 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 5 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="hl">WBGNIe</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">← 改为 WBG_NIe</span>
+      </div>
+
+      <div class="note"><strong>提示：</strong>如果同一个选手出现在两个 cluster 里，给两行填写相同的名字即可，apply 时会自动合并。</div>
+
+      <p>确认前可以先预览重命名结果：</p>
+      <div class="code-block">
+        <div class="code-label">终端</div>
+        <pre><span class="cmd">python clip_label.py --apply</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Step 4 -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">4</div>
+      <h2>应用标签并导出</h2>
+    </div>
+    <div class="step-body">
+      <p>确认标签无误后，加上 <code>--confirm</code> 参数正式重命名图片文件，并将 MVP 名字写回 CSV。</p>
+
+      <div class="code-block">
+        <div class="code-label">终端</div>
+        <pre><span class="cmd">python clip_label.py --apply --confirm</span></pre>
+      </div>
+
+      <p>完成后，数据集即告完整：</p>
+      <div class="output-box">
+        csv_output/<br>
+        &nbsp;&nbsp;└── 2025IVL_Autumn_Finals.csv<br>
+        <br>
+        match_id &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| team_a | team_b | winner | mvp<br>
+        ─────────────────────────────────────────────<br>
+        1103477862... &nbsp;| TE &nbsp;&nbsp;&nbsp;&nbsp;| GG &nbsp;&nbsp;&nbsp;&nbsp;| GG &nbsp;&nbsp;&nbsp;&nbsp;| <span class="ok">GG_xawm</span><br>
+        1103539022... &nbsp;| Gr &nbsp;&nbsp;&nbsp;&nbsp;| MRC &nbsp;&nbsp;&nbsp;| MRC &nbsp;&nbsp;&nbsp;| <span class="ok">MRC_Bailu</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- New data -->
+  <div class="step-group">
+    <div class="step-group-title">
+      <div class="step-group-num">+</div>
+      <h2>后续添加新数据</h2>
+    </div>
+    <div class="step-body">
+      <p>有新赛季数据时，重复相同步骤即可。第 2 步会自动跳过已标注的图片，只对新的 <code>mvp.png</code> 聚类。</p>
+      <p>新赛季会自动生成独立的 CSV 文件（如 <code>2026IVL_Autumn_Finals.csv</code>），不会影响已有数据。</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <a href="index.html">← 首页</a> &nbsp;·&nbsp;
+  <a href="design.html">设计文档</a> &nbsp;·&nbsp;
+  <a href="https://github.com/Lou-Meixuan/IVL-IdentityV-Prediction" target="_blank">GitHub ↗</a>
+</footer>
+</div>
+
+<script>
+  function setLang(lang, e) {
+    document.querySelectorAll('.lang-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('content-' + lang).classList.add('active');
+    e.target.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+
+</body>
+</html>
