@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design Doc — IVL Match Prediction</title>
+  <style>
+    :root { --bg: #0d1117; --surface: #161b22; --border: #30363d; --accent: #58a6ff; --accent2: #3fb950; --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #f0f6fc; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.7; }
+    #lang-toggle { position: fixed; top: 16px; right: 20px; z-index: 100; background: var(--surface); border: 1px solid var(--border); color: var(--accent); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    #lang-toggle:hover { background: var(--border); }
+    nav { padding: 18px 40px; border-bottom: 1px solid var(--border); display: flex; gap: 24px; font-size: 14px; }
+    nav a { color: var(--text-dim); text-decoration: none; }
+    nav a:hover { color: var(--accent); }
+    .page { max-width: 820px; margin: 0 auto; padding: 50px 20px 80px; }
+    h1 { font-size: 2rem; color: var(--text-bright); margin-bottom: 8px; }
+    .subtitle { color: var(--text-dim); margin-bottom: 48px; }
+    h2 { font-size: 1.25rem; color: var(--text-bright); margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1rem; color: var(--accent); margin: 20px 0 8px; }
+    p { color: var(--text-dim); font-size: 0.92rem; margin-bottom: 10px; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 14px 18px; overflow-x: auto; margin: 12px 0; }
+    pre code { font-family: "SF Mono", Consolas, monospace; font-size: 0.82rem; color: var(--text); }
+    code { font-family: "SF Mono", Consolas, monospace; font-size: 0.82rem; color: var(--accent2); background: #21262d; padding: 1px 5px; border-radius: 3px; }
+    .box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin: 14px 0; }
+    .box h3 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 12px 0; }
+    th { background: var(--surface); color: var(--text-dim); text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    td { padding: 7px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    td:first-child { color: var(--accent2); font-family: monospace; }
+    footer { text-align: center; padding: 30px 20px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 13px; }
+    footer a { color: var(--text-dim); text-decoration: none; }
+    footer a:hover { color: var(--accent); }
+    .cn { display: none; }
+    body.lang-cn .en { display: none; }
+    body.lang-cn .cn { display: block; }
+    span.en, span.cn { display: inline; }
+    body.lang-cn span.en { display: none; }
+    body.lang-cn span.cn { display: inline; }
+  </style>
+</head>
+<body>
+<button id="lang-toggle" onclick="toggleLang()">中文</button>
+<nav>
+  <a href="index.html" class="en">← Home</a><a href="index.html" class="cn">← 首页</a>
+  <a href="usage.html" class="en">How to Use</a><a href="usage.html" class="cn">使用说明</a>
+</nav>
+<div class="page">
+  <h1 class="en">Design Document</h1>
+  <h1 class="cn">设计文档</h1>
+  <p class="subtitle en">Technical architecture and design decisions for the IVL match prediction dataset pipeline.</p>
+  <p class="subtitle cn">IVL 赛果数据集 Pipeline 的技术架构与设计决策说明。</p>
+
+  <h2 class="en">Overview</h2>
+  <h2 class="cn">概述</h2>
+  <p class="en">The pipeline has two stages: data collection (scraping) and MVP labeling. They are decoupled — scraping outputs unlabeled CSVs and raw images; labeling reads those images and writes MVP names back into the CSVs.</p>
+  <p class="cn">Pipeline 分两个阶段：数据采集（爬取）和 MVP 标注。两者解耦——爬取阶段输出未标注的 CSV 和原始图片，标注阶段读取图片后将 MVP 名字写回 CSV。</p>
+
+  <h2 class="en">Components</h2>
+  <h2 class="cn">模块说明</h2>
+  <div class="box">
+    <h3>data_collection.py</h3>
+    <p class="en">Playwright-based scraper. Scrolls the IVL Bilibili space page, intercepts the <code>opus/feed/space</code> API, filters posts by season keywords and <code>TARGET_YEAR</code>, then navigates to each post to extract image URLs. Downloads two images per match (scoreboard + MVP) into <code>result_images/SEASON/TEAM_vs_TEAM_ID/</code>. Outputs one CSV per season into <code>csv_output/</code>.</p>
+    <p class="cn">基于 Playwright 的爬虫。滚动 B 站 IVL 主页，拦截 <code>opus/feed/space</code> API，按赛季关键词和 <code>TARGET_YEAR</code> 过滤，访问每篇动态提取图片 URL。每场比赛下载两张图（比分 + MVP），存入 <code>result_images/SEASON/TEAM_vs_TEAM_ID/</code>。每个赛季输出一个 CSV 到 <code>csv_output/</code>。</p>
+  </div>
+  <div class="box">
+    <h3>clip_label.py</h3>
+    <p class="en">OCR-based MVP identification. Crops the name-tag region from each <code>mvp.png</code>, runs Tesseract OCR, normalizes the text, and groups images with the same normalized name. Outputs a contact sheet PNG and a labels CSV for human review. After correction, <code>--apply --confirm</code> renames images to <code>mvp_PLAYERNAME.png</code> and writes MVP names into the season CSVs.</p>
+    <p class="cn">基于 OCR 的 MVP 识别。从每张 <code>mvp.png</code> 截取 name tag 区域，运行 Tesseract OCR，对文字 normalize 后分组。输出 contact sheet PNG 和标签 CSV 供人工校正。校正后运行 <code>--apply --confirm</code> 将图片改名为 <code>mvp_PLAYERNAME.png</code>，并将 MVP 名字写回赛季 CSV。</p>
+  </div>
+
+  <h2 class="en">Data flow</h2>
+  <h2 class="cn">数据流</h2>
+  <pre><code>data_collection.py
+  └─ result_images/
+       └─ 2025IVL_Autumn/
+            └─ ACT_vs_DOU5_1145xxx/
+                 ├─ score_3-1.png
+                 └─ mvp.png          ← unlabeled
+
+clip_label.py --build --year 2025
+  └─ cluster_output/
+       ├─ cluster_sheet_clip_2025.png
+       ├─ cluster_labels_clip_2025.csv   ← human edits this
+       └─ cluster_mapping_clip_2025.json
+
+clip_label.py --apply --year 2025 --confirm
+  └─ mvp.png  →  mvp_ACT_zz9.png
+  └─ csv_output/2025IVL_Autumn.csv  (mvp column filled)</code></pre>
+
+  <h2 class="en">CSV schema</h2>
+  <h2 class="cn">CSV 字段说明</h2>
+  <table>
+    <thead><tr><th><span class="en">Column</span><span class="cn">字段</span></th><th><span class="en">Description</span><span class="cn">说明</span></th></tr></thead>
+    <tbody>
+      <tr><td>match_id</td><td><span class="en">Bilibili opus ID (unique per post)</span><span class="cn">B 站动态 ID，每篇唯一</span></td></tr>
+      <tr><td>team_a / team_b</td><td><span class="en">Competing teams, extracted from post title</span><span class="cn">参赛队伍，从动态标题提取</span></td></tr>
+      <tr><td>date</td><td><span class="en">Post publish date (YYYY-MM-DD)</span><span class="cn">动态发布日期</span></td></tr>
+      <tr><td>winner</td><td><span class="en">Winning team, from #TEAM获胜 pattern</span><span class="cn">胜方队伍，从"#队伍获胜"提取</span></td></tr>
+      <tr><td>match_score</td><td><span class="en">Overall BO score, e.g. 3-1</span><span class="cn">总比分，如 3-1</span></td></tr>
+      <tr><td>game_scores</td><td><span class="en">Per-game scores joined by " | "</span><span class="cn">单局比分，用 " | " 连接</span></td></tr>
+      <tr><td>mvp</td><td><span class="en">Best Deduction player, filled by clip_label.py</span><span class="cn">最佳演绎选手，由 clip_label.py 写入</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="en">MVP image formats by year</h2>
+  <h2 class="cn">各年份 MVP 图格式</h2>
+  <div class="box"><h3>2025</h3><p class="en">Light-colored ticket banner. Name tag cropped at <code>y: 19.6–33.6%, x: 14.9–41.1%</code>.</p><p class="cn">浅色票据横幅，name tag 裁剪区域：<code>y: 19.6–33.6%, x: 14.9–41.1%</code>。</p></div>
+  <div class="box"><h3>2026</h3><p class="en">Full-screen player photo, name in top-left. Cropped at <code>y: 13–21%, x: 11–40%</code>.</p><p class="cn">全屏选手照片，选手名在左上角。裁剪区域：<code>y: 13–21%, x: 11–40%</code>。</p></div>
+
+  <h2 class="en">Key design decisions</h2>
+  <h2 class="cn">主要设计决策</h2>
+  <h3 class="en">OCR over visual clustering</h3>
+  <h3 class="cn">用 OCR 替代视觉聚类</h3>
+  <p class="en">Earlier versions used CLIP embeddings + KMeans. This caused same-team players (similar jerseys) to be merged. Since the name tag already contains the player name as text, OCR grouping is simpler and more accurate.</p>
+  <p class="cn">早期版本使用 CLIP embedding + KMeans，会把同队选手误分到同一组。由于 name tag 本身已包含文字，OCR 分组更简单也更准确。</p>
+  <h3 class="en">Decoupled scraping and labeling</h3>
+  <h3 class="cn">爬取与标注解耦</h3>
+  <p class="en">Separate scripts with no shared state. Re-label any year without re-scraping; scrape new years without disturbing existing labels.</p>
+  <p class="cn">独立脚本，无共享状态。可单独重新标注某年，也可爬取新数据而不影响已有标注。</p>
+  <h3 class="en">Per-season CSV output</h3>
+  <h3 class="cn">按赛季分文件输出</h3>
+  <p class="en">One CSV per season (e.g. <code>2025IVL_Autumn.csv</code>) rather than a single combined file.</p>
+  <p class="cn">每个赛季单独一个 CSV（如 <code>2025IVL_Autumn.csv</code>），方便单独查看或更新。</p>
+</div>
+<footer>
+  IVL-IdentityV-Prediction &nbsp;·&nbsp;
+  <span class="en"><a href="index.html">Home</a> &nbsp;·&nbsp; <a href="usage.html">How to Use</a></span>
+  <span class="cn" style="display:none"><a href="index.html">首页</a> &nbsp;·&nbsp; <a href="usage.html">使用说明</a></span>
+</footer>
+<script>
+  function toggleLang() {
+    const isCn = document.body.classList.toggle('lang-cn');
+    document.getElementById('lang-toggle').textContent = isCn ? 'English' : '中文';
+    document.querySelectorAll('footer .en').forEach(el => el.style.display = isCn ? 'none' : 'inline');
+    document.querySelectorAll('footer .cn').forEach(el => el.style.display = isCn ? 'inline' : 'none');
+  }
+</script>
+</body>
+</html>
