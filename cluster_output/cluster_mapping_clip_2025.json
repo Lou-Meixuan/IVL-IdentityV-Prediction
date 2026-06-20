@@ -1,0 +1,354 @@
+{
+  "0": [
+    "result_images/2025IVL_Autumn/FPX.ZQ_vs_Gr_1135063803689435137/mvp.png",
+    "result_images/2025IVL_Autumn/GG_vs_Gr_1135390427415838757/mvp.png",
+    "result_images/2025IVL_Autumn/Gr_vs_DOU5_1133208682759192592/mvp.png",
+    "result_images/2025IVL_Autumn/Gr_vs_FPX.ZQ_1119145890410397730/mvp.png",
+    "result_images/2025IVL_Autumn/Gr_vs_GW_1120175351106895889/mvp.png",
+    "result_images/2025IVL_Autumn/Gr_vs_WBG_1141040255022923779/mvp.png",
+    "result_images/2025IVL_Autumn/TE_vs_Gr_1129876544095780885/mvp.png",
+    "result_images/2025IVL_Autumn/WBG_vs_Gr_1127293817066618880/mvp.png",
+    "result_images/2025IVL_Autumn/Wolves_vs_Gr_1125370084029628423/mvp.png",
+    "result_images/2025IVL_Autumn_Finals/Gr_vs_WBG_1152500456135589888/mvp.png",
+    "result_images/2025IVL_Autumn_Finals/Gr_vs_Wolves_1153294887590821897/mvp.png",
+    "result_images/2025IVL_Summer/DOU5_vs_Gr_1076073128001536021/mvp.png",
+    "result_images/2025IVL_Summer/FPX.ZQ_vs_Gr_1088706684105261073/mvp.png",
+    "result_images/2025IVL_Summer/GG_vs_Gr_1080837969016782868/mvp.png",
+    "result_images/2025IVL_Summer/Gr_vs_DOU5_1096436422621003792/mvp.png",
+    "result_images/2025IVL_Summer/Gr_vs_FPX.ZQ_1083902724521590789/mvp.png",
+    "result_images/2025IVL_Summer/Gr_vs_GW_1093859536721149958/mvp.png",
+    "result_images/2025IVL_Summer/Gr_vs_MRC_1088330505108062245/mvp.png",
+    "result_images/2025IVL_Summer/Gr_vs_TE_1091667140607475718/mvp.png",
+    "result_images/2025IVL_Summer/Gr_vs_Wolves_1075287239166001177/mvp.png",
+    "result_images/2025IVL_Summer/MRC_vs_Gr_1083447144434630664/mvp.png",
+    "result_images/2025IVL_Summer/TE_vs_Gr_1086437493931245607/mvp.png",
+    "result_images/2025IVL_Summer/WBG_vs_Gr_1078612681998467090/mvp.png"
+  ],
+  "1": [
+    "result_images/2025IVL_Autumn/DOU5_vs_MRC_1140954987001544710/mvp.png",
+    "result_images/2025IVL_Autumn/FPX.ZQ_vs_MRC_1139863313694326790/mvp.png",
+    "result_images/2025IVL_Autumn/GG_vs_MRC_1119108743271809026/mvp.png",
+    "result_images/2025IVL_Autumn/MRC_vs_DOU5_1120557397037809718/mvp.png",
+    "result_images/2025IVL_Autumn/MRC_vs_FPX.ZQ_1122435045066276867/mvp.png",
+    "result_images/2025IVL_Autumn/MRC_vs_GG_1138391312443113510/mvp.png",
+    "result_images/2025IVL_Autumn/MRC_vs_GW_1128025709549191188/mvp.png",
+    "result_images/2025IVL_Autumn/MRC_vs_Gr_1130565237777367046/mvp.png",
+    "result_images/2025IVL_Autumn/MRC_vs_TE_1135818893326024706/mvp.png",
+    "result_images/2025IVL_Autumn/MRC_vs_WBG_1125395093589590020/mvp.png",
+    "result_images/2025IVL_Autumn/WBG_vs_MRC_1135422764208881673/mvp.png",
+    "result_images/2025IVL_Autumn/Wolves_vs_MRC_1119491270242205715/mvp.png",
+    "result_images/2025IVL_Autumn_Finals/MRC_vs_Gr_1152913623359684627/mvp.png",
+    "result_images/2025IVL_Summer/MRC_vs_TE_1076015893255815188/mvp.png",
+    "result_images/2025IVL_Summer/TE_vs_MRC_1096500769853538358/mvp.png",
+    "result_images/2025IVL_Summer/WBG_vs_MRC_1078242064968187920/mvp.png",
+    "result_images/2025IVL_Summer_Finals/Gr_vs_MRC_1103539022956855364/mvp.png"
+  ],
+  "2": [
+    "result_images/2025IVL_Autumn/FPX.ZQ_vs_TE_1127269713657724928/mvp.png",
+    "result_images/2025IVL_Autumn/GG_vs_TE_1145082643851771924/mvp.png",
+    "result_images/2025IVL_Autumn/TE_vs_GW_1138029285343232006/mvp.png",
+    "result_images/2025IVL_Autumn/TE_vs_MRC_1127637886885167202/mvp.png",
+    "result_images/2025IVL_Autumn_Finals/TE_vs_FPX.ZQ_1152464541612769314/mvp.png",
+    "result_images/2025IVL_Summer/TE_vs_ACT_1078300377783205889/mvp.png",
+    "result_images/2025IVL_Summer/TE_vs_DOU5_1099422271031738390/mvp.png",
+    "result_images/2025IVL_Summer/TE_vs_FPX.ZQ_1088299697291919376/mvp.png",
+    "result_images/2025IVL_Summer/TE_vs_GW_1091238936696586274/mvp.png",
+    "result_images/2025IVL_Summer/Wolves_vs_TE_1080898751385567232/mvp.png"
+  ],
+  "3": [
+    "result_images/2025IVL_Autumn/ACT_vs_GG_1122411658966204417/mvp.png",
+    "result_images/2025IVL_Autumn/GG_vs_ACT_1139887494343426051/mvp.png",
+    "result_images/2025IVL_Autumn/GG_vs_TE_1135026867022069777/mvp.png",
+    "result_images/2025IVL_Autumn/GG_vs_Wolves_1135793862258720771/mvp.png",
+    "result_images/2025IVL_Summer/DOU5_vs_GG_1075738227927678994/mvp.png",
+    "result_images/2025IVL_Summer/FPX.ZQ_vs_GG_1077940081566679065/mvp.png",
+    "result_images/2025IVL_Summer/GG_vs_ACT_1085693416624357428/mvp.png",
+    "result_images/2025IVL_Summer/GG_vs_MRC_1086040926712758272/mvp.png",
+    "result_images/2025IVL_Summer/GW_vs_GG_1083806272446267413/mvp.png"
+  ],
+  "4": [
+    "result_images/2025IVL_Autumn/DOU5_vs_ACT_1127236174290616327/mvp.png",
+    "result_images/2025IVL_Autumn/DOU5_vs_FPX.ZQ_1119817262504607744/mvp.png",
+    "result_images/2025IVL_Autumn/DOU5_vs_GW_1124637341081665553/mvp.png",
+    "result_images/2025IVL_Autumn/DOU5_vs_TE_1119444382060118017/mvp.png",
+    "result_images/2025IVL_Summer/DOU5_vs_ACT_1093464902283034629/mvp.png",
+    "result_images/2025IVL_Summer/DOU5_vs_TE_1094240431637528596/mvp.png",
+    "result_images/2025IVL_Summer/DOU5_vs_WBG_1091302884423761941/mvp.png",
+    "result_images/2025IVL_Summer/MRC_vs_DOU5_1091633154560622617/mvp.png",
+    "result_images/2025IVL_Summer/TE_vs_DOU5_1078679477362360326/mvp.png"
+  ],
+  "5": [
+    "result_images/2025IVL_Autumn/DOU5_vs_FPX.ZQ_1145139144189542417/mvp.png",
+    "result_images/2025IVL_Autumn/GG_vs_FPX.ZQ_1145442592200065045/mvp.png",
+    "result_images/2025IVL_Summer/DOU5_vs_FPX.ZQ_1080503678787387399/mvp.png",
+    "result_images/2025IVL_Summer/FPX.ZQ_vs_ACT_1090868731978973185/mvp.png",
+    "result_images/2025IVL_Summer/FPX.ZQ_vs_TE_1083099342276919296/mvp.png",
+    "result_images/2025IVL_Summer/FPX.ZQ_vs_Wolves_1086414945394884615/mvp.png",
+    "result_images/2025IVL_Summer/GG_vs_FPX.ZQ_1093521776232628229/mvp.png",
+    "result_images/2025IVL_Summer/GW_vs_FPX.ZQ_1076051051852857367/mvp.png"
+  ],
+  "6": [
+    "result_images/2025IVL_Autumn/Wolves_vs_DOU5_1122116427243847698/mvp.png",
+    "result_images/2025IVL_Autumn/Wolves_vs_FPX.ZQ_1124670408078917670/mvp.png",
+    "result_images/2025IVL_Autumn/Wolves_vs_WBG_1119076234620305414/mvp.png",
+    "result_images/2025IVL_Summer/GG_vs_Wolves_1094272141368492050/mvp.png",
+    "result_images/2025IVL_Summer/GW_vs_Wolves_1093499700116455447/mvp.png",
+    "result_images/2025IVL_Summer/TE_vs_Wolves_1098727087612624950/mvp.png",
+    "result_images/2025IVL_Summer/Wolves_vs_ACT_1083144817417912345/mvp.png",
+    "result_images/2025IVL_Summer/Wolves_vs_GW_1077906512109633537/mvp.png"
+  ],
+  "7": [
+    "result_images/2025IVL_Autumn/ACT_vs_Wolves_1135458481159012375/mvp.png",
+    "result_images/2025IVL_Autumn/FPX.ZQ_vs_Wolves_1138085171455590419/mvp.png",
+    "result_images/2025IVL_Autumn/Gr_vs_Wolves_1140244565086699529/mvp.png",
+    "result_images/2025IVL_Autumn/Wolves_vs_GW_1127614363325169683/mvp.png",
+    "result_images/2025IVL_Autumn/Wolves_vs_TE_1122468812140052500/mvp.png",
+    "result_images/2025IVL_Summer/Wolves_vs_FPX.ZQ_1091611121350082569/mvp.png"
+  ],
+  "8": [
+    "result_images/2025IVL_Summer/ACT_vs_WBG_1080863820401868822/mvp.png",
+    "result_images/2025IVL_Summer/FPX.ZQ_vs_WBG_1099030982318620690/mvp.png",
+    "result_images/2025IVL_Summer/GW_vs_WBG_1090902262768730118/mvp.png",
+    "result_images/2025IVL_Summer/WBG_vs_ACT_1098326062209695779/mvp.png",
+    "result_images/2025IVL_Summer/WBG_vs_FPX.ZQ_1081209505130217512/mvp.png"
+  ],
+  "9": [
+    "result_images/2025IVL_Autumn/DOU5_vs_Wolves_1130599245355679751/mvp.png",
+    "result_images/2025IVL_Autumn_Finals/Wolves_vs_TE_1153233718701195270/mvp.png",
+    "result_images/2025IVL_Summer_Finals/Gr_vs_Wolves_1104250604547473417/mvp.png",
+    "result_images/2025IVL_Summer_Finals/Wolves_vs_GG_1103878346797744134/mvp.png"
+  ],
+  "10": [
+    "result_images/2025IVL_Autumn/GG_vs_WBG_1132483048063893511/mvp.png",
+    "result_images/2025IVL_Autumn/GW_vs_WBG_1125064724692598790/mvp.png",
+    "result_images/2025IVL_Summer/Gr_vs_WBG_1094207772676849672/mvp.png",
+    "result_images/2025IVL_Summer/WBG_vs_TE_1089010772047036424/mvp.png"
+  ],
+  "11": [
+    "result_images/2025IVL_Autumn/WBG_vs_DOU5_1128001683496894516/mvp.png",
+    "result_images/2025IVL_Autumn/WBG_vs_TE_1120233595175174144/mvp.png",
+    "result_images/2025IVL_Summer/WBG_vs_GW_1086115603322765362/mvp.png",
+    "result_images/2025IVL_Summer_Finals/Wolves_vs_WBG_1103596940600279063/mvp.png"
+  ],
+  "12": [
+    "result_images/2025IVL_Autumn/ACT_vs_DOU5_1137648399059779606/mvp.png",
+    "result_images/2025IVL_Autumn/DOU5_vs_GG_1140594463194742790/mvp.png",
+    "result_images/2025IVL_Summer/DOU5_vs_GW_1083078065044586497/mvp.png"
+  ],
+  "13": [
+    "result_images/2025IVL_Autumn/ACT_vs_TE_1130622399501303812/mvp.png",
+    "result_images/2025IVL_Autumn/TE_vs_DOU5_1132435124808318981/mvp.png",
+    "result_images/2025IVL_Summer/TE_vs_WBG_1083510344883634180/mvp.png"
+  ],
+  "14": [
+    "result_images/2025IVL_Autumn/ACT_vs_WBG_1122771431235518516/mvp.png",
+    "result_images/2025IVL_Autumn/DOU5_vs_WBG_1130214888693563400/mvp.png",
+    "result_images/2025IVL_Autumn/TE_vs_WBG_1133173141944664117/mvp.png"
+  ],
+  "15": [
+    "result_images/2025IVL_Autumn/GW_vs_Wolves_1139841104456187904/mvp.png",
+    "result_images/2025IVL_Summer/Wolves_vs_DOU5_1083479648788021265/mvp.png",
+    "result_images/2025IVL_Summer/Wolves_vs_MRC_1080536500937949192/mvp.png"
+  ],
+  "16": [
+    "result_images/2025IVL_Autumn/TE_vs_GG_1125008576576749574/mvp.png",
+    "result_images/2025IVL_Autumn_Finals/TE_vs_WBG_1152859846066831377/mvp.png",
+    "result_images/2025IVL_Summer/GG_vs_TE_1099066566126862345/mvp.png"
+  ],
+  "17": [
+    "result_images/2025IVL_Summer/DOU5_vs_Wolves_1088641555194970129/mvp.png",
+    "result_images/2025IVL_Summer/Wolves_vs_Gr_1096795889947639811/mvp.png",
+    "result_images/2025IVL_Summer_Finals/Wolves_vs_MRC_1104308994581725190/mvp.png"
+  ],
+  "18": [
+    "result_images/2025IVL_Autumn/ACT_vs_GW_1119467854076313602/mvp.png",
+    "result_images/2025IVL_Summer/ACT_vs_DOU5_1077871241786818576/mvp.png"
+  ],
+  "19": [
+    "result_images/2025IVL_Autumn/ACT_vs_MRC_1132802009524600856/mvp.png",
+    "result_images/2025IVL_Summer/DOU5_vs_MRC_1086459514257932292/mvp.png"
+  ],
+  "20": [
+    "result_images/2025IVL_Autumn/FPX.ZQ_vs_ACT_1140997069091110920/mvp.png",
+    "result_images/2025IVL_Autumn/FPX.ZQ_vs_GW_1120612076293718054/mvp.png"
+  ],
+  "21": [
+    "result_images/2025IVL_Autumn/FPX.ZQ_vs_DOU5_1138428098870509585/mvp.png",
+    "result_images/2025IVL_Autumn/GW_vs_DOU5_1135097321658253313/mvp.png"
+  ],
+  "22": [
+    "result_images/2025IVL_Autumn/GW_vs_ACT_1133241891473588233/mvp.png",
+    "result_images/2025IVL_Summer/ACT_vs_MRC_1088672633605586944/mvp.png"
+  ],
+  "23": [
+    "result_images/2025IVL_Autumn/MRC_vs_ACT_1124703071282135078/mvp.png",
+    "result_images/2025IVL_Summer/MRC_vs_WBG_1093826761851928582/mvp.png"
+  ],
+  "24": [
+    "result_images/2025IVL_Autumn/MRC_vs_Wolves_1137680207600156690/mvp.png",
+    "result_images/2025IVL_Summer/Wolves_vs_GG_1078645998098579480/mvp.png"
+  ],
+  "25": [
+    "result_images/2025IVL_Autumn/TE_vs_FPX.ZQ_1130283926052405254/mvp.png",
+    "result_images/2025IVL_Autumn/TE_vs_Wolves_1140666030236893201/mvp.png"
+  ],
+  "26": [
+    "result_images/2025IVL_Autumn/WBG_vs_ACT_1137995307868487712/mvp.png",
+    "result_images/2025IVL_Autumn/WBG_vs_GW_1135758961341890563/mvp.png"
+  ],
+  "27": [
+    "result_images/2025IVL_Autumn/WBG_vs_FPX.ZQ_1122082411071406102/mvp.png",
+    "result_images/2025IVL_Summer/FPX.ZQ_vs_MRC_1096871202179252242/mvp.png"
+  ],
+  "28": [
+    "result_images/2025IVL_Autumn/WBG_vs_GG_1119841133960101896/mvp.png",
+    "result_images/2025IVL_Summer/WBG_vs_Wolves_1096117985194541064/mvp.png"
+  ],
+  "29": [
+    "result_images/2025IVL_Autumn/Wolves_vs_ACT_1129831580047507463/mvp.png",
+    "result_images/2025IVL_Summer/ACT_vs_GW_1096055119704752145/mvp.png"
+  ],
+  "30": [
+    "result_images/2025IVL_Summer/FPX.ZQ_vs_GW_1096468278391341061/mvp.png",
+    "result_images/2025IVL_Summer/GW_vs_Gr_1078277816293785608/mvp.png"
+  ],
+  "31": [
+    "result_images/2025IVL_Summer/Gr_vs_ACT_1081267659023056902/mvp.png",
+    "result_images/2025IVL_Summer/Gr_vs_GG_1098659136917209089/mvp.png"
+  ],
+  "32": [
+    "result_images/2025IVL_Autumn/ACT_vs_FPX.ZQ_1127967538523668504/mvp.png"
+  ],
+  "33": [
+    "result_images/2025IVL_Autumn/ACT_vs_Gr_1140629067748343861/mvp.png"
+  ],
+  "34": [
+    "result_images/2025IVL_Autumn/DOU5_vs_Gr_1125041647887843331/mvp.png"
+  ],
+  "35": [
+    "result_images/2025IVL_Autumn/FPX.ZQ_vs_GG_1132868972339789845/mvp.png"
+  ],
+  "36": [
+    "result_images/2025IVL_Autumn/FPX.ZQ_vs_WBG_1140222141021552643/mvp.png"
+  ],
+  "37": [
+    "result_images/2025IVL_Autumn/GG_vs_DOU5_1127672165004476466/mvp.png"
+  ],
+  "38": [
+    "result_images/2025IVL_Autumn/GG_vs_FPX.ZQ_1129911470780317717/mvp.png"
+  ],
+  "39": [
+    "result_images/2025IVL_Autumn/GG_vs_GW_1125419574882205715/mvp.png"
+  ],
+  "40": [
+    "result_images/2025IVL_Autumn/GW_vs_FPX.ZQ_1132457901057638455/mvp.png"
+  ],
+  "41": [
+    "result_images/2025IVL_Autumn/GW_vs_GG_1130248741620547588/mvp.png"
+  ],
+  "42": [
+    "result_images/2025IVL_Autumn/GW_vs_Gr_1137625343705743392/mvp.png"
+  ],
+  "43": [
+    "result_images/2025IVL_Autumn/GW_vs_MRC_1140267491634708520/mvp.png"
+  ],
+  "44": [
+    "result_images/2025IVL_Autumn/GW_vs_TE_1122805026477047813/mvp.png"
+  ],
+  "45": [
+    "result_images/2025IVL_Autumn/Gr_vs_ACT_1120589364530774040/mvp.png"
+  ],
+  "46": [
+    "result_images/2025IVL_Autumn/Gr_vs_GG_1122827828456325122/mvp.png"
+  ],
+  "47": [
+    "result_images/2025IVL_Autumn/Gr_vs_MRC_1122048751464087585/mvp.png"
+  ],
+  "48": [
+    "result_images/2025IVL_Autumn/Gr_vs_TE_1138359010014003200/mvp.png"
+  ],
+  "49": [
+    "result_images/2025IVL_Autumn/TE_vs_ACT_1119874583151771664/mvp.png"
+  ],
+  "50": [
+    "result_images/2025IVL_Autumn/WBG_vs_Wolves_1132834685637885960/mvp.png"
+  ],
+  "51": [
+    "result_images/2025IVL_Autumn/Wolves_vs_GG_1120208976437313544/mvp.png"
+  ],
+  "52": [
+    "result_images/2025IVL_Autumn_Finals/MRC_vs_Wolves_1152555590575194130/mvp.png"
+  ],
+  "53": [
+    "result_images/2025IVL_Summer/ACT_vs_FPX.ZQ_1086083940823859273/mvp.png"
+  ],
+  "54": [
+    "result_images/2025IVL_Summer/ACT_vs_GG_1091271359366955024/mvp.png"
+  ],
+  "55": [
+    "result_images/2025IVL_Summer/ACT_vs_Gr_1099086103949869113/mvp.png"
+  ],
+  "56": [
+    "result_images/2025IVL_Summer/ACT_vs_TE_1093891186381291523/mvp.png"
+  ],
+  "57": [
+    "result_images/2025IVL_Summer/ACT_vs_Wolves_1089045393823498256/mvp.png"
+  ],
+  "58": [
+    "result_images/2025IVL_Summer/FPX.ZQ_vs_DOU5_1098370051295150089/mvp.png"
+  ],
+  "59": [
+    "result_images/2025IVL_Summer/FPX.ZQ_vs_GG_1099463910722895912/mvp.png"
+  ],
+  "60": [
+    "result_images/2025IVL_Summer/GG_vs_DOU5_1096086610438520885/mvp.png"
+  ],
+  "61": [
+    "result_images/2025IVL_Summer/GG_vs_GW_1089076072724561929/mvp.png"
+  ],
+  "62": [
+    "result_images/2025IVL_Summer/GG_vs_WBG_1096837697149861929/mvp.png"
+  ],
+  "63": [
+    "result_images/2025IVL_Summer/GW_vs_ACT_1075703511677665299/mvp.png"
+  ],
+  "64": [
+    "result_images/2025IVL_Summer/GW_vs_DOU5_1088267386257145860/mvp.png"
+  ],
+  "65": [
+    "result_images/2025IVL_Summer/GW_vs_MRC_1081242408909275137/mvp.png"
+  ],
+  "66": [
+    "result_images/2025IVL_Summer/GW_vs_TE_1085671881689792528/mvp.png"
+  ],
+  "67": [
+    "result_images/2025IVL_Summer/MRC_vs_ACT_1083840563442090019/mvp.png"
+  ],
+  "68": [
+    "result_images/2025IVL_Summer/MRC_vs_FPX.ZQ_1075337881128534024/mvp.png"
+  ],
+  "69": [
+    "result_images/2025IVL_Summer/MRC_vs_GG_1090936029792174097/mvp.png"
+  ],
+  "70": [
+    "result_images/2025IVL_Summer/MRC_vs_GW_1098691203168206866/mvp.png"
+  ],
+  "71": [
+    "result_images/2025IVL_Summer/MRC_vs_Wolves_1098293965898121240/mvp.png"
+  ],
+  "72": [
+    "result_images/2025IVL_Summer/TE_vs_GG_1080478506005037072/mvp.png"
+  ],
+  "73": [
+    "result_images/2025IVL_Summer/WBG_vs_DOU5_1085726496491831319/mvp.png"
+  ],
+  "74": [
+    "result_images/2025IVL_Summer/WBG_vs_GG_1075312399077081094/mvp.png"
+  ],
+  "75": [
+    "result_images/2025IVL_Summer_Finals/MRC_vs_WBG_1103923495550582803/mvp.png"
+  ],
+  "76": [
+    "result_images/2025IVL_Summer_Finals/TE_vs_GG_1103477862603685894/mvp.png"
+  ]
+}

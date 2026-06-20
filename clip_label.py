@@ -1,27 +1,34 @@
 """
-CLIP embedding + nearest-neighbor MVP labeling
+OCR-based MVP image grouping and labeling
 
-Why this works better than pixel clustering:
-  CLIP encodes images into a semantic embedding space.
-  Two ticket images showing "ACT_zz9" will have very similar
-  embeddings regardless of background texture or lighting.
+Why OCR instead of CLIP clustering:
+  The ticket/name-tag region already has the player name printed clearly.
+  OCR reads the text directly; images with the same name are grouped together.
+  This avoids visual-similarity mistakes (e.g. two players from the same team
+  being merged into one cluster).
 
 =====================================
 Setup
 =====================================
-    pip install torch torchvision transformers Pillow opencv-python scikit-learn pytesseract
+    pip install opencv-python pytesseract Pillow pandas
+    # also install Tesseract binary: https://github.com/UB-Mannheim/tesseract/wiki
 
 =====================================
 Usage
 =====================================
-    # Step 1: build embeddings, cluster, generate contact sheet + CSV
-    python clip_label.py --build
+    # Step 1: OCR all images, group by name, generate contact sheet + CSV
+    python clip_label.py --build --year 2025
 
-    # Step 2: open cluster_sheet_clip.png, fix wrong names in cluster_labels_clip.csv
+    # Step 2: open the contact sheet PNG, fix wrong names in the CSV
+    #         (each row = one OCR group; edit player_name column)
 
     # Step 3: apply
-    python clip_label.py --apply            # preview
-    python clip_label.py --apply --confirm  # actually rename
+    python clip_label.py --apply --year 2025            # preview
+    python clip_label.py --apply --year 2025 --confirm  # actually rename + update CSV
+
+MVP image formats by year:
+  2025: light-colored ticket banner with player name (fixed crop)
+  2026: full-screen player photo with large name text in top-left corner (fixed crop)
 """
 
 import os
@@ -32,21 +39,33 @@ import re
 import numpy as np
 import argparse
 import pandas as pd
-from collections import defaultdict
-from difflib import SequenceMatcher
+from collections import defaultdict, Counter
 
 # ============================
 # Config
 # ============================
 
-SAVE_DIR       = "result_images"
-OUTPUT_SHEET   = "cluster_sheet_clip.png"
-OUTPUT_CSV     = "cluster_labels_clip.csv"
-OUTPUT_MAPPING = "cluster_mapping_clip.json"
+SAVE_DIR    = "result_images"
+CLUSTER_DIR = "cluster_output"   # all cluster files go here
+
+os.makedirs(CLUSTER_DIR, exist_ok=True)
+
+# Output paths — updated at runtime when --year is passed
+OUTPUT_SHEET   = os.path.join(CLUSTER_DIR, "cluster_sheet_clip.png")
+OUTPUT_CSV     = os.path.join(CLUSTER_DIR, "cluster_labels_clip.csv")
+OUTPUT_MAPPING = os.path.join(CLUSTER_DIR, "cluster_mapping_clip.json")
+
+
+def set_year(year: int | None):
+    """Update output paths to include year suffix, e.g. cluster_output/cluster_labels_clip_2026.csv"""
+    global OUTPUT_SHEET, OUTPUT_CSV, OUTPUT_MAPPING
+    if year:
+        OUTPUT_SHEET   = os.path.join(CLUSTER_DIR, f"cluster_sheet_clip_{year}.png")
+        OUTPUT_CSV     = os.path.join(CLUSTER_DIR, f"cluster_labels_clip_{year}.csv")
+        OUTPUT_MAPPING = os.path.join(CLUSTER_DIR, f"cluster_mapping_clip_{year}.json")
+
 
 TICKET_W, TICKET_H = 480, 120
-N_CLUSTERS = 40          # adjust if you have more/fewer unique players
-CLIP_MODEL = "openai/clip-vit-base-patch32"
 
 TEAM_PREFIXES    = ["FPX.ZQ", "Wolves", "DOU5", "WBG", "ACT", "MRC", "GW", "GG", "TE", "Gr"]
 _WHITELIST       = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._"
@@ -63,65 +82,27 @@ def get_ticket(path: str) -> np.ndarray | None:
     if img is None:
         return None
     h, w = img.shape[:2]
-    region = img[int(h * 0.08):int(h * 0.42), int(w * 0.04):int(w * 0.70)]
-    hsv = cv2.cvtColor(region, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(hsv, (0, 0, 160), (180, 60, 255))
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 8))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cands = [c for c in contours
-             if cv2.contourArea(c) > 5000
-             and cv2.boundingRect(c)[2] / max(cv2.boundingRect(c)[3], 1) > 1.5]
-    if not cands:
-        return None
-    c = max(cands, key=cv2.contourArea)
-    x, y, cw, ch = cv2.boundingRect(c)
-    ticket = region[y:y+ch, x+int(cw*0.10):x+int(cw*0.90)]
-    return cv2.resize(ticket, (TICKET_W, TICKET_H)) if ticket.size > 0 else None
+
+    # Detect year from folder path and apply fixed crop accordingly.
+    # Fixed crops give consistent cell sizes in the contact sheet.
+    if "2026" in path:
+        # 2026 UI: full-screen player photo, name in top-left
+        #   [logo]  TEAM_NAME   <- skip
+        #           PLAYER_NAME <- y: 13-21%, x: 11-40%
+        region = img[int(h * 0.13):int(h * 0.21), int(w * 0.11):int(w * 0.40)]
+    else:
+        # 2025 UI: ticket banner, player name area
+        #   coordinates from reference image (2800x1576):
+        #   x: 418-1150, y: 309-530  ->  x: 14.9-41.1%, y: 19.6-33.6%
+        region = img[int(h * 0.196):int(h * 0.336), int(w * 0.149):int(w * 0.411)]
+
+    if region.size > 0:
+        return cv2.resize(region, (TICKET_W, TICKET_H))
+    return None
 
 
 # ============================
-# CLIP embedding
-# ============================
-
-def load_clip():
-    from transformers import CLIPProcessor, CLIPModel
-    import torch
-    print(f"Loading CLIP model ({CLIP_MODEL})...")
-    model = CLIPModel.from_pretrained(CLIP_MODEL)
-    processor = CLIPProcessor.from_pretrained(CLIP_MODEL)
-    model.eval()
-    return model, processor
-
-
-def embed_tickets(tickets: list[np.ndarray], model, processor) -> np.ndarray:
-    import torch
-    from PIL import Image
-
-    embeddings = []
-    batch_size = 32
-
-    for i in range(0, len(tickets), batch_size):
-        batch = tickets[i:i + batch_size]
-        pil_imgs = [Image.fromarray(cv2.cvtColor(t, cv2.COLOR_BGR2RGB)) for t in batch]
-        inputs = processor(images=pil_imgs, return_tensors="pt", padding=True)
-        with torch.no_grad():
-            feats = model.get_image_features(**inputs)
-            # get_image_features returns a tensor directly in some versions,
-            # but a ModelOutput object in others — handle both
-            if hasattr(feats, "pooler_output"):
-                feats = feats.pooler_output
-            elif hasattr(feats, "last_hidden_state"):
-                feats = feats.last_hidden_state[:, 0]
-            feats = feats / feats.norm(p=2, dim=-1, keepdim=True)
-        embeddings.append(feats.cpu().numpy())
-        print(f"  Embedded {min(i + batch_size, len(tickets))}/{len(tickets)}")
-
-    return np.vstack(embeddings)
-
-
-# ============================
-# OCR suggestion
+# OCR
 # ============================
 
 def _team_of(text: str) -> str | None:
@@ -155,15 +136,24 @@ def ocr_ticket(ticket: np.ndarray) -> str:
         return ""
 
 
+def _normalize_for_grouping(text: str) -> str:
+    """Strip underscores, dots, and case differences for grouping key.
+    e.g. 'Gr_AK' and 'GrAK' both map to 'grak' -> same group."""
+    return re.sub(r'[^a-z0-9]', '', text.lower())
+
+
 # ============================
 # Collect MVP images
 # ============================
 
-def collect_paths(save_dir: str) -> list[str]:
+def collect_paths(save_dir: str, year: int | None = None) -> list[str]:
     # Only collect unlabeled mvp.png files.
-    # Already-labeled files (mvp_*.png) are skipped — they don't need re-clustering.
+    # Already-labeled files (mvp_*.png) are skipped.
+    # If year is set, only collect from folders whose season starts with that year.
     paths = []
     for season in sorted(os.listdir(save_dir)):
+        if year and not season.startswith(str(year)):
+            continue
         sp = os.path.join(save_dir, season)
         if not os.path.isdir(sp):
             continue
@@ -181,94 +171,102 @@ def collect_paths(save_dir: str) -> list[str]:
 # Build
 # ============================
 
-def build(save_dir: str, n_clusters: int):
-    from sklearn.cluster import KMeans
-    from sklearn.decomposition import PCA
+def build(save_dir: str, year: int | None = None):
+    paths = collect_paths(save_dir, year=year)
+    print(f"Found {len(paths)} unlabeled MVP images")
 
-    paths = collect_paths(save_dir)
-    print(f"Found {len(paths)} MVP images")
+    # Crop name tag and run OCR on each image
+    tickets     = []
+    valid_paths = []
+    ocr_results = []
 
-    # Crop tickets
-    tickets, valid_paths = [], []
-    for p in paths:
+    for i, p in enumerate(paths):
         t = get_ticket(p)
-        if t is not None:
-            tickets.append(t)
-            valid_paths.append(p)
-        else:
-            print(f"  Warning: no ticket in {p}")
+        if t is None:
+            print(f"  Warning: no ticket region in {p}")
+            continue
+        text = ocr_ticket(t)
+        tickets.append(t)
+        valid_paths.append(p)
+        ocr_results.append(text)
+        folder = os.path.basename(os.path.dirname(p))
+        print(f"  [{i+1}/{len(paths)}] {folder}: '{text}'")
 
-    # CLIP embeddings
-    model, processor = load_clip()
-    print(f"\nEmbedding {len(tickets)} ticket images with CLIP...")
-    embeddings = embed_tickets(tickets, model, processor)
-    print(f"Embeddings shape: {embeddings.shape}")
+    print(f"\nOCR done: {len(tickets)} images")
 
-    # Reduce dims then cluster
-    pca_dim = min(50, embeddings.shape[1])
-    reduced = PCA(n_components=pca_dim, random_state=42).fit_transform(embeddings)
+    if not tickets:
+        print("No unlabeled mvp.png files found. Nothing to do.")
+        print("(Already-labeled mvp_*.png files are skipped.)")
+        return
 
-    print(f"\nClustering into {n_clusters} groups...")
-    km = KMeans(n_clusters=n_clusters, random_state=42, n_init=20)
-    cluster_ids = km.fit_predict(reduced)
+    # Group images by normalized OCR text
+    # Normalization removes underscores/dots and lowercases, so minor OCR
+    # differences ('Gr_AK' vs 'GrAK') land in the same group.
+    group_map: dict[str, list[int]] = defaultdict(list)  # norm_key -> [indices]
+    key_to_texts: dict[str, list[str]] = defaultdict(list)  # norm_key -> [raw texts]
 
-    cluster_map: dict[int, list[int]] = defaultdict(list)
-    for i, cid in enumerate(cluster_ids):
-        cluster_map[int(cid)].append(i)
+    for i, text in enumerate(ocr_results):
+        key = _normalize_for_grouping(text) if text else f"__empty_{i}__"
+        group_map[key].append(i)
+        key_to_texts[key].append(text)
 
-    # Sort by size
-    ordered = sorted(cluster_map.keys(), key=lambda c: -len(cluster_map[c]))
+    # Pick best display name per group: most common non-empty OCR result
+    def best_display(texts: list[str]) -> str:
+        non_empty = [t for t in texts if t]
+        if not non_empty:
+            return ""
+        return Counter(non_empty).most_common(1)[0][0]
 
-    # OCR suggestions
-    print("\nRunning OCR on cluster representatives...")
-    suggestions: dict[int, str] = {}
-    for cid in ordered:
-        # Use the image closest to cluster centroid as rep
-        idxs = cluster_map[cid]
-        center = reduced[idxs].mean(axis=0)
-        dists = [np.linalg.norm(reduced[i] - center) for i in idxs]
-        best_idx = idxs[int(np.argmin(dists))]
-        suggestions[cid] = ocr_ticket(tickets[best_idx])
-        print(f"  Cluster {cid:3d} (n={len(idxs):3d}): {suggestions[cid]}")
+    # Sort groups by size descending
+    ordered_keys = sorted(group_map.keys(), key=lambda k: -len(group_map[k]))
+    key_to_gid   = {k: gid for gid, k in enumerate(ordered_keys)}
 
-    # Contact sheet
-    COLS = 4
+    print(f"Groups: {len(ordered_keys)}")
+    for k in ordered_keys:
+        gid = key_to_gid[k]
+        display = best_display(key_to_texts[k])
+        print(f"  #{gid:3d} n={len(group_map[k]):3d}  '{display}'")
+
+    # Contact sheet: one representative (first image) per group
+    COLS   = 4
     LABEL_H = 40
-    rows = (len(ordered) + COLS - 1) // COLS
-    sheet = np.ones((rows * (TICKET_H + LABEL_H), COLS * TICKET_W, 3), dtype=np.uint8) * 230
+    rows   = (len(ordered_keys) + COLS - 1) // COLS
+    sheet  = np.ones((rows * (TICKET_H + LABEL_H), COLS * TICKET_W, 3), dtype=np.uint8) * 230
 
-    for idx, cid in enumerate(ordered):
-        r, c = divmod(idx, COLS)
-        idxs = cluster_map[cid]
-        center = reduced[idxs].mean(axis=0)
-        dists = [np.linalg.norm(reduced[i] - center) for i in idxs]
-        rep = tickets[idxs[int(np.argmin(dists))]]
+    for idx, key in enumerate(ordered_keys):
+        gid    = key_to_gid[key]
+        idxs   = group_map[key]
+        r, c   = divmod(idx, COLS)
+        rep    = tickets[idxs[0]]
         y0, x0 = r * (TICKET_H + LABEL_H), c * TICKET_W
         sheet[y0:y0+TICKET_H, x0:x0+TICKET_W] = rep
         cv2.rectangle(sheet, (x0, y0), (x0+TICKET_W-1, y0+TICKET_H-1), (150, 150, 150), 1)
-        label = f"#{cid} n={len(idxs)}  {suggestions.get(cid, '')}"
+        display = best_display(key_to_texts[key])
+        label   = f"#{gid} n={len(idxs)}  {display}"
         cv2.putText(sheet, label, (x0+4, y0+TICKET_H+28),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.62, (30, 30, 180), 2)
 
     cv2.imwrite(OUTPUT_SHEET, sheet)
     print(f"\nContact sheet: {OUTPUT_SHEET}")
 
-    # CSV
+    # CSV (same format as before — compatible with apply_labels)
     with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["cluster_id", "n_images", "player_name"])
-        for cid in ordered:
-            w.writerow([cid, len(cluster_map[cid]), suggestions.get(cid, "")])
-    print(f"CSV: {OUTPUT_CSV}  (fix wrong names)")
+        for key in ordered_keys:
+            gid     = key_to_gid[key]
+            display = best_display(key_to_texts[key])
+            w.writerow([gid, len(group_map[key]), display])
+    print(f"CSV: {OUTPUT_CSV}  (fix any wrong names, then run --apply --confirm)")
 
-    # Mapping
-    mapping = {str(cid): [valid_paths[i] for i in cluster_map[cid]] for cid in cluster_map}
+    # Mapping (same format as before — compatible with apply_labels)
+    mapping = {
+        str(key_to_gid[key]): [valid_paths[i] for i in group_map[key]]
+        for key in ordered_keys
+    }
     with open(OUTPUT_MAPPING, "w", encoding="utf-8") as f:
         json.dump(mapping, f, ensure_ascii=False, indent=2)
     print(f"Mapping: {OUTPUT_MAPPING}")
-
-    print("\nNext: fix names in cluster_labels_clip.csv, then:")
-    print("  python clip_label.py --apply --confirm")
 
 
 # ============================
@@ -297,7 +295,7 @@ def apply_labels(confirm: bool = False):
     for cid, file_paths in mapping.items():
         player = labels.get(cid)
         if not player:
-            print(f"  Cluster {cid}: no label, skipping {len(file_paths)} file(s)")
+            print(f"  Group {cid}: no label, skipping {len(file_paths)} file(s)")
             skipped += len(file_paths)
             continue
         safe = player.replace("/", "_").replace("\\", "_")
@@ -318,7 +316,6 @@ def apply_labels(confirm: bool = False):
     if not confirm and renamed > 0:
         print("Add --confirm to actually rename.")
 
-    # After confirming renames, write correct MVP names back to any CSV in cwd
     if confirm:
         _update_csv_mvp(SAVE_DIR)
 
@@ -330,8 +327,8 @@ def apply_labels(confirm: bool = False):
 def _update_csv_mvp(save_dir: str):
     """
     Scan all match folders in save_dir, read MVP name from mvp_*.png filename,
-    then update the mvp column in any CSV files in the current directory
-    that have match_id and mvp columns.
+    then update the mvp column in any CSV files in csv_output/ that have
+    match_id and mvp columns.
     """
     import glob
 
@@ -345,15 +342,13 @@ def _update_csv_mvp(save_dir: str):
             mp = os.path.join(sp, match_dir)
             if not os.path.isdir(mp):
                 continue
-            # Extract match_id: last long numeric token in folder name
             m = re.search(r'(\d{15,})', match_dir)
             if not m:
                 continue
             match_id = m.group(1)
-            # Find mvp_*.png (skip plain mvp.png — not yet labeled)
             for fname in os.listdir(mp):
                 if fname.startswith("mvp_") and fname.endswith(".png"):
-                    mvp_name = fname[4:-4]  # strip "mvp_" prefix and ".png"
+                    mvp_name = fname[4:-4]
                     mvp_map[match_id] = mvp_name
                     break
 
@@ -361,7 +356,6 @@ def _update_csv_mvp(save_dir: str):
         print("  No labeled MVP files found, skipping CSV update.")
         return
 
-    # Update all CSV files in csv_output/ that have match_id + mvp columns
     updated_files = 0
     for csv_path in glob.glob(os.path.join("csv_output", "*.csv")):
         try:
@@ -383,62 +377,55 @@ def _update_csv_mvp(save_dir: str):
 
 
 # ============================
-# Nearest-neighbor inference (for new images after gallery is built)
+# Reset: undo a previous --apply --confirm
 # ============================
 
-def predict_single(image_path: str, gallery_csv: str, gallery_mapping: str):
+def reset(save_dir: str, year: int | None = None):
     """
-    Given a new MVP image, find the most similar labeled cluster.
-    Useful after --build + labeling for classifying new incoming images.
+    Rename mvp_PLAYERNAME.png back to mvp.png and clear the mvp column in csv_output/.
+    Use this to redo labeling from scratch for a given year.
     """
-    import torch
-    from PIL import Image
+    import glob
 
-    ticket = get_ticket(image_path)
-    if ticket is None:
-        print("No ticket region found.")
-        return None
-
-    model, processor = load_clip()
-    pil = Image.fromarray(cv2.cvtColor(ticket, cv2.COLOR_BGR2RGB))
-    inputs = processor(images=[pil], return_tensors="pt")
-    with torch.no_grad():
-        emb = model.get_image_features(**inputs)
-        emb = emb / emb.norm(dim=-1, keepdim=True)
-    emb = emb.cpu().numpy()[0]
-
-    # Load gallery embeddings (re-embed on-the-fly for simplicity)
-    labels: dict[str, str] = {}
-    with open(gallery_csv, newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            name = row["player_name"].strip()
-            if name:
-                labels[row["cluster_id"]] = name
-
-    with open(gallery_mapping, encoding="utf-8") as f:
-        mapping: dict[str, list[str]] = json.load(f)
-
-    best_cid, best_sim = None, -1.0
-    for cid, file_paths in mapping.items():
-        if cid not in labels:
+    renamed = 0
+    for season in sorted(os.listdir(save_dir)):
+        if year and not season.startswith(str(year)):
             continue
-        for fp in file_paths[:3]:   # use up to 3 examples per cluster
-            t = get_ticket(fp)
-            if t is None:
+        sp = os.path.join(save_dir, season)
+        if not os.path.isdir(sp):
+            continue
+        for match_dir in sorted(os.listdir(sp)):
+            mp = os.path.join(sp, match_dir)
+            if not os.path.isdir(mp):
                 continue
-            pil2 = Image.fromarray(cv2.cvtColor(t, cv2.COLOR_BGR2RGB))
-            inp2 = processor(images=[pil2], return_tensors="pt")
-            with torch.no_grad():
-                e2 = model.get_image_features(**inp2)
-                e2 = e2 / e2.norm(dim=-1, keepdim=True)
-            sim = float((emb * e2.cpu().numpy()[0]).sum())
-            if sim > best_sim:
-                best_sim = sim
-                best_cid = cid
+            for fname in os.listdir(mp):
+                if fname.startswith("mvp_") and fname.endswith(".png"):
+                    old = os.path.join(mp, fname)
+                    new = os.path.join(mp, "mvp.png")
+                    os.rename(old, new)
+                    print(f"  reset: {fname} -> mvp.png")
+                    renamed += 1
 
-    result = labels.get(best_cid, "unknown")
-    print(f"Prediction: {result}  (similarity={best_sim:.3f}, cluster={best_cid})")
-    return result
+    print(f"\nRenamed {renamed} file(s) back to mvp.png")
+
+    # Clear mvp column in CSVs
+    updated = 0
+    for csv_path in glob.glob(os.path.join("csv_output", "*.csv")):
+        if year and not os.path.basename(csv_path).startswith(str(year)):
+            continue
+        try:
+            df = pd.read_csv(csv_path, dtype=str, encoding="utf-8-sig")
+            if "mvp" not in df.columns:
+                continue
+            df["mvp"] = None
+            df.to_csv(csv_path, index=False, encoding="utf-8-sig")
+            print(f"  Cleared mvp column in {csv_path}")
+            updated += 1
+        except Exception as e:
+            print(f"  Warning: could not update {csv_path}: {e}")
+
+    print(f"Cleared mvp column in {updated} CSV file(s)")
+    print("\nNow run: python clip_label.py --build --year", year or "")
 
 
 # ============================
@@ -446,24 +433,26 @@ def predict_single(image_path: str, gallery_csv: str, gallery_mapping: str):
 # ============================
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="CLIP-based MVP image labeling")
-    parser.add_argument("--build",      action="store_true",
-                        help="Embed all images with CLIP, cluster, generate sheet + CSV")
-    parser.add_argument("--apply",      action="store_true",
+    parser = argparse.ArgumentParser(description="OCR-based MVP image grouping and labeling")
+    parser.add_argument("--build",   action="store_true",
+                        help="OCR all images, group by name, generate contact sheet + CSV")
+    parser.add_argument("--apply",   action="store_true",
                         help="Rename files based on filled CSV")
-    parser.add_argument("--confirm",    action="store_true",
-                        help="Used with --apply: actually rename")
-    parser.add_argument("--predict",    type=str, default=None,
-                        help="Path to a single new MVP image to classify")
-    parser.add_argument("--n-clusters", type=int, default=N_CLUSTERS,
-                        help=f"Number of clusters (default: {N_CLUSTERS})")
+    parser.add_argument("--confirm", action="store_true",
+                        help="Used with --apply: actually rename and update CSV")
+    parser.add_argument("--year",    type=int, default=None,
+                        help="Filter by year and use year-suffixed output files (e.g. --year 2025)")
+    parser.add_argument("--reset",   action="store_true",
+                        help="Undo a previous --apply --confirm: rename mvp_*.png back to mvp.png and clear CSV mvp column")
     args = parser.parse_args()
 
+    set_year(args.year)
+
     if args.build:
-        build(SAVE_DIR, args.n_clusters)
+        build(SAVE_DIR, year=args.year)
     elif args.apply:
         apply_labels(confirm=args.confirm)
-    elif args.predict:
-        predict_single(args.predict, OUTPUT_CSV, OUTPUT_MAPPING)
+    elif args.reset:
+        reset(SAVE_DIR, year=args.year)
     else:
         parser.print_help()

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to Use — IVL Match Prediction</title>
+  <style>
+    :root {
+      --bg: #0d1117; --surface: #161b22; --border: #30363d;
+      --accent: #58a6ff; --accent2: #3fb950;
+      --text: #c9d1d9; --text-dim: #8b949e; --text-bright: #f0f6fc;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; }
+
+    #lang-toggle {
+      position: fixed; top: 16px; right: 20px; z-index: 100;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--accent); padding: 6px 14px; border-radius: 6px;
+      cursor: pointer; font-size: 13px;
+    }
+    #lang-toggle:hover { background: var(--border); }
+
+    nav { padding: 18px 40px; border-bottom: 1px solid var(--border); display: flex; gap: 24px; font-size: 14px; }
+    nav a { color: var(--text-dim); text-decoration: none; }
+    nav a:hover { color: var(--accent); }
+
+    .page { max-width: 780px; margin: 0 auto; padding: 50px 20px 80px; }
+    h1 { font-size: 2rem; color: var(--text-bright); margin-bottom: 8px; }
+    .subtitle { color: var(--text-dim); margin-bottom: 48px; }
+
+    .step-block { margin-bottom: 40px; }
+    .step-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .step-num {
+      background: var(--accent); color: #0d1117; border-radius: 50%;
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; flex-shrink: 0;
+    }
+    .step-header h2 { font-size: 1.15rem; color: var(--text-bright); }
+    .step-body { padding-left: 46px; }
+    .step-body p { color: var(--text-dim); font-size: 0.92rem; margin-bottom: 10px; }
+    pre {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+      padding: 14px 18px; overflow-x: auto; margin: 10px 0;
+    }
+    code { font-family: "SF Mono", Consolas, monospace; font-size: 0.85rem; color: var(--accent2); }
+    pre code { color: var(--text); }
+    .note {
+      background: #1c2128; border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0; padding: 10px 16px; margin-top: 10px;
+      font-size: 0.85rem; color: var(--text-dim);
+    }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+    footer { text-align: center; padding: 30px 20px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 13px; }
+    footer a { color: var(--text-dim); text-decoration: none; }
+    footer a:hover { color: var(--accent); }
+
+    .cn { display: none; }
+    body.lang-cn .en { display: none; }
+    body.lang-cn .cn { display: block; }
+    span.en, span.cn { display: inline; }
+    body.lang-cn span.en { display: none; }
+    body.lang-cn span.cn { display: inline; }
+  </style>
+</head>
+<body>
+
+<button id="lang-toggle" onclick="toggleLang()">中文</button>
+
+<nav>
+  <a href="index.html" class="en">← Home</a>
+  <a href="index.html" class="cn">← 首页</a>
+  <a href="design.html" class="en">Design Doc</a>
+  <a href="design.html" class="cn">设计文档</a>
+</nav>
+
+<div class="page">
+  <h1 class="en">How to Use</h1>
+  <h1 class="cn">使用说明</h1>
+  <p class="subtitle en">Follow these steps to build and update the IVL match prediction dataset.</p>
+  <p class="subtitle cn">按照以下步骤构建并更新 IVL 赛果数据集。</p>
+
+  <!-- Step 1 -->
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <h2 class="en">Prerequisites</h2>
+      <h2 class="cn">环境准备</h2>
+    </div>
+    <div class="step-body">
+      <p class="en">Install Python dependencies and Tesseract OCR.</p>
+      <p class="cn">安装 Python 依赖和 Tesseract OCR。</p>
+      <pre><code>pip install -r requirements.txt
+# also install Tesseract: https://github.com/UB-Mannheim/tesseract/wiki
+# install Playwright browsers:
+playwright install chromium</code></pre>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <h2 class="en">Scrape match data</h2>
+      <h2 class="cn">抓取赛果数据</h2>
+    </div>
+    <div class="step-body">
+      <p class="en">Set <code>TARGET_YEAR</code> at the top of <code>data_collection.py</code>, then run it. A browser window will open and auto-scroll the IVL Bilibili account.</p>
+      <p class="cn">在 <code>data_collection.py</code> 顶部设置 <code>TARGET_YEAR</code>，然后运行。浏览器会自动打开并滚动 B 站 IVL 官方账号。</p>
+      <pre><code>python data_collection.py</code></pre>
+      <p class="en">Outputs: images in <code>result_images/</code>, raw CSVs in <code>csv_output/</code> (one per season).</p>
+      <p class="cn">输出：图片保存在 <code>result_images/</code>，CSV 保存在 <code>csv_output/</code>（每个赛季一个文件）。</p>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <h2 class="en">Build OCR groups</h2>
+      <h2 class="cn">OCR 分组</h2>
+    </div>
+    <div class="step-body">
+      <p class="en">Crop each MVP image's name tag, run OCR, and group by player name.</p>
+      <p class="cn">截取每张 MVP 图的 name tag，运行 OCR，按选手名分组。</p>
+      <pre><code>python clip_label.py --build --year 2025</code></pre>
+      <p class="en">Outputs in <code>cluster_output/</code>: a contact sheet PNG and a labels CSV. Each row in the CSV is one OCR group.</p>
+      <p class="cn">输出保存在 <code>cluster_output/</code>：一张 contact sheet 和一个标签 CSV，每行对应一个 OCR 分组。</p>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <h2 class="en">Review &amp; correct</h2>
+      <h2 class="cn">检查与校正</h2>
+    </div>
+    <div class="step-body">
+      <p class="en">Open <code>cluster_output/cluster_sheet_clip_2025.png</code> to see the contact sheet. Open <code>cluster_output/cluster_labels_clip_2025.csv</code> and fix any wrong player names in the <code>player_name</code> column.</p>
+      <p class="cn">打开 <code>cluster_output/cluster_sheet_clip_2025.png</code> 查看分组效果。打开对应 CSV，修正 <code>player_name</code> 列中识别错误的选手名。</p>
+      <div class="note en">OCR is usually correct. Only fix the rows where the name is wrong or missing.</div>
+      <div class="note cn">OCR 大部分情况准确，只需修正错误或缺失的行。</div>
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num">5</div>
+      <h2 class="en">Apply &amp; export</h2>
+      <h2 class="cn">写回并导出</h2>
+    </div>
+    <div class="step-body">
+      <p class="en">Preview first (no files changed):</p>
+      <p class="cn">先预览（不实际修改）：</p>
+      <pre><code>python clip_label.py --apply --year 2025</code></pre>
+      <p class="en">Then confirm to rename image files and write MVP names into the CSVs:</p>
+      <p class="cn">确认无误后执行，重命名图片并将 MVP 名字写回 CSV：</p>
+      <pre><code>python clip_label.py --apply --year 2025 --confirm</code></pre>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Adding new data -->
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num" style="background:var(--accent2)">+</div>
+      <h2 class="en">Adding new season data</h2>
+      <h2 class="cn">新赛季数据</h2>
+    </div>
+    <div class="step-body">
+      <p class="en">Change <code>TARGET_YEAR</code> to the new year, re-run <code>data_collection.py</code>, then run <code>clip_label.py --build --year 2026</code>. Previously labeled years are completely unaffected.</p>
+      <p class="cn">将 <code>TARGET_YEAR</code> 改为新年份，重新运行 <code>data_collection.py</code>，然后运行 <code>clip_label.py --build --year 2026</code>。已有年份的标注完全不受影响。</p>
+      <div class="note en">If you need to redo labeling for a year: <code>python clip_label.py --reset --year 2025</code> — this renames all <code>mvp_*.png</code> back to <code>mvp.png</code> and clears the mvp column in the CSVs.</div>
+      <div class="note cn">如需重新标注某年：运行 <code>python clip_label.py --reset --year 2025</code>，会将所有 <code>mvp_*.png</code> 改回 <code>mvp.png</code> 并清空 CSV 中的 mvp 列。</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  IVL-IdentityV-Prediction &nbsp;·&nbsp;
+  <span class="en"><a href="index.html">Home</a> &nbsp;·&nbsp; <a href="design.html">Design Doc</a></span>
+  <span class="cn" style="display:none"><a href="index.html">首页</a> &nbsp;·&nbsp; <a href="design.html">设计文档</a></span>
+</footer>
+
+<script>
+  function toggleLang() {
+    const isCn = document.body.classList.toggle('lang-cn');
+    document.getElementById('lang-toggle').textContent = isCn ? 'English' : '中文';
+    document.querySelectorAll('footer .en').forEach(el => el.style.display = isCn ? 'none' : 'inline');
+    document.querySelectorAll('footer .cn').forEach(el => el.style.display = isCn ? 'inline' : 'none');
+  }
+</script>
+</body>
+</html>
