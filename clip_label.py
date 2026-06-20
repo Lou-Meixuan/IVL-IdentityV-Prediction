@@ -31,6 +31,7 @@ import json
 import re
 import numpy as np
 import argparse
+import pandas as pd
 from collections import defaultdict
 from difflib import SequenceMatcher
 
@@ -159,6 +160,8 @@ def ocr_ticket(ticket: np.ndarray) -> str:
 # ============================
 
 def collect_paths(save_dir: str) -> list[str]:
+    # Only collect unlabeled mvp.png files.
+    # Already-labeled files (mvp_*.png) are skipped — they don't need re-clustering.
     paths = []
     for season in sorted(os.listdir(save_dir)):
         sp = os.path.join(save_dir, season)
@@ -169,7 +172,7 @@ def collect_paths(save_dir: str) -> list[str]:
             if not os.path.isdir(mp):
                 continue
             for fname in sorted(os.listdir(mp)):
-                if fname.startswith("mvp_") and fname.endswith(".png"):
+                if fname == "mvp.png":
                     paths.append(os.path.join(mp, fname))
     return paths
 
@@ -314,6 +317,69 @@ def apply_labels(confirm: bool = False):
     print(f"\n{mode}: rename={renamed}, unchanged={unchanged}, unlabeled={skipped}")
     if not confirm and renamed > 0:
         print("Add --confirm to actually rename.")
+
+    # After confirming renames, write correct MVP names back to any CSV in cwd
+    if confirm:
+        _update_csv_mvp(SAVE_DIR)
+
+
+# ============================
+# Update CSV with MVP names from renamed files
+# ============================
+
+def _update_csv_mvp(save_dir: str):
+    """
+    Scan all match folders in save_dir, read MVP name from mvp_*.png filename,
+    then update the mvp column in any CSV files in the current directory
+    that have match_id and mvp columns.
+    """
+    import glob
+
+    # Build {match_id: mvp_name} from renamed image files
+    mvp_map: dict[str, str] = {}
+    for season in sorted(os.listdir(save_dir)):
+        sp = os.path.join(save_dir, season)
+        if not os.path.isdir(sp):
+            continue
+        for match_dir in sorted(os.listdir(sp)):
+            mp = os.path.join(sp, match_dir)
+            if not os.path.isdir(mp):
+                continue
+            # Extract match_id: last long numeric token in folder name
+            m = re.search(r'(\d{15,})', match_dir)
+            if not m:
+                continue
+            match_id = m.group(1)
+            # Find mvp_*.png (skip plain mvp.png — not yet labeled)
+            for fname in os.listdir(mp):
+                if fname.startswith("mvp_") and fname.endswith(".png"):
+                    mvp_name = fname[4:-4]  # strip "mvp_" prefix and ".png"
+                    mvp_map[match_id] = mvp_name
+                    break
+
+    if not mvp_map:
+        print("  No labeled MVP files found, skipping CSV update.")
+        return
+
+    # Update all CSV files in csv_output/ that have match_id + mvp columns
+    updated_files = 0
+    for csv_path in glob.glob(os.path.join("csv_output", "*.csv")):
+        try:
+            df = pd.read_csv(csv_path, dtype=str, encoding="utf-8-sig")
+            if "match_id" not in df.columns or "mvp" not in df.columns:
+                continue
+            before = df["mvp"].copy()
+            df["mvp"] = df["match_id"].map(mvp_map).fillna(df["mvp"])
+            changed = (df["mvp"] != before).sum()
+            if changed > 0:
+                df.to_csv(csv_path, index=False, encoding="utf-8-sig")
+                print(f"  Updated {changed} MVP entries in {csv_path}")
+                updated_files += 1
+        except Exception as e:
+            print(f"  Warning: could not update {csv_path}: {e}")
+
+    if updated_files == 0:
+        print("  No CSV files updated.")
 
 
 # ============================
