@@ -24,7 +24,6 @@ import json
 import os
 import re
 import pandas as pd
-from datetime import datetime
 
 
 # =====================================
@@ -102,33 +101,6 @@ def detect_season(text: str) -> str | None:
 
     return None
 
-
-# =====================================
-# Extract publish date
-# =====================================
-
-def extract_pub_date(item: dict) -> str | None:
-
-    paths = [
-        lambda x: x["modules"]["module_author"]["pub_ts"],
-        lambda x: x["pub_ts"],
-        lambda x: x["timestamp"],
-    ]
-
-    for fn in paths:
-
-        try:
-
-            ts = fn(item)
-
-            return datetime.fromtimestamp(
-                int(ts)
-            ).strftime("%Y-%m-%d")
-
-        except Exception:
-            continue
-
-    return None
 
 
 # =====================================
@@ -392,8 +364,6 @@ for item in all_items:
 
         match_score, wins_a, wins_b, game_scores = calc_match_score(text)
 
-        date = extract_pub_date(item)
-
         # Folder structure:
         # result_images/
         #   └── 2025IVL_Autumn_Finals/
@@ -501,7 +471,6 @@ for item in all_items:
             "season": season,
             "team_a": team_a,
             "team_b": team_b,
-            "date": date,
             "winner": winner,
             "match_score": match_score,
             "game_scores": " | ".join(game_scores),
@@ -524,7 +493,6 @@ OUTPUT_COLS = [
     "match_id",
     "team_a",
     "team_b",
-    "date",
     "winner",
     "match_score",
     "game_scores",
@@ -545,7 +513,6 @@ else:
 
     df = df.sort_values([
         "season",
-        "date",
         "match_id"
     ]).reset_index(drop=True)
 

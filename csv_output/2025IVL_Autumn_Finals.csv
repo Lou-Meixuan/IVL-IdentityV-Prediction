@@ -1,8 +1,8 @@
-﻿match_id,team_a,team_b,date,winner,match_score,game_scores,mvp
-1152464541612769314,TE,FPX.ZQ,,TE,3-1,5:3 | 4:4 | 5:3 | 1:8 | 5:3,TE_ppei
-1152500456135589888,Gr,WBG,,Gr,3-0,5:3 | 5:3 | 5:3,Gr_Jin
-1152555590575194130,MRC,Wolves,,MRC,2-1,2:7 | 8:1 | 4:4 | 4:4 | 5:3,MRC_XiaoX
-1152859846066831377,TE,WBG,,TE,3-1,6:2 | 5:3 | 4:4 | 3:5 | 7:2,TE_Maom
-1152913623359684627,MRC,Gr,,MRC,3-1,5:3 | 1:8 | 8:1 | 5:5 | 5:3,MRC_BaiLu
-1153233718701195270,Wolves,TE,,Wolves,2-1,4:4 | 2:7 | 6:2 | 5:3 | 4:4,Wolves_ChoAi
-1153294887590821897,Gr,Wolves,,Gr,2-0,4:4 | 4:4 | 6:3 | 4:4 | 7:2,Gr_Jin
+﻿match_id,team_a,team_b,winner,match_score,game_scores,mvp
+1152464541612769314,TE,FPX.ZQ,TE,3-1,5:3 | 4:4 | 5:3 | 1:8 | 5:3,TE_ppei
+1152500456135589888,Gr,WBG,Gr,3-0,5:3 | 5:3 | 5:3,Gr_Jin
+1152555590575194130,MRC,Wolves,MRC,2-1,2:7 | 8:1 | 4:4 | 4:4 | 5:3,MRC_XiaoX
+1152859846066831377,TE,WBG,TE,3-1,6:2 | 5:3 | 4:4 | 3:5 | 7:2,TE_Maom
+1152913623359684627,MRC,Gr,MRC,3-1,5:3 | 1:8 | 8:1 | 5:5 | 5:3,MRC_BaiLu
+1153233718701195270,Wolves,TE,Wolves,2-1,4:4 | 2:7 | 6:2 | 5:3 | 4:4,Wolves_ChoAi
+1153294887590821897,Gr,Wolves,Gr,2-0,4:4 | 4:4 | 6:3 | 4:4 | 7:2,Gr_Jin
