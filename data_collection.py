@@ -36,11 +36,11 @@ JSON_DUMP = "all_bilibili_dynamic.json"
 
 BILIBILI_UID = "105022844"
 
-SCROLL_COUNT = 100
+SCROLL_COUNT = 500
 
-# Set to a specific year (e.g. 2025) to only collect that year's matches.
+# Years to collect. Use a set so multiple years work, e.g. {2022, 2023, 2024}.
 # Set to None to collect all years.
-TARGET_YEAR = 2025
+TARGET_YEARS = {2021, 2022, 2023, 2024}
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 os.makedirs(CSV_DIR, exist_ok=True)
@@ -343,7 +343,9 @@ for item in all_items:
         if not season:
             continue
 
-        if TARGET_YEAR and not season.startswith(str(TARGET_YEAR)):
+        if TARGET_YEARS and not any(
+            season.startswith(str(y)) for y in TARGET_YEARS
+        ):
             continue
 
         if "赛果公示" not in text:

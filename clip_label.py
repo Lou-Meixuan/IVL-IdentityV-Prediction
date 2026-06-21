@@ -87,9 +87,18 @@ def get_ticket(path: str) -> np.ndarray | None:
     # Fixed crops give consistent cell sizes in the contact sheet.
     if "2026" in path:
         # 2026 UI: full-screen player photo, name in top-left
-        #   [logo]  TEAM_NAME   <- skip
-        #           PLAYER_NAME <- y: 13-21%, x: 11-40%
+        #   PLAYER_NAME <- y: 13-21%, x: 11-40%
         region = img[int(h * 0.13):int(h * 0.21), int(w * 0.11):int(w * 0.40)]
+    elif "2024" in path:
+        # 2024 UI: name overlaid on image, no ticket banner
+        #   coordinates from reference image (1916x1075):
+        #   x: 120-500, y: 280-350  ->  x: 6.3-26.1%, y: 26.0-32.6%
+        region = img[int(h * 0.260):int(h * 0.326), int(w * 0.063):int(w * 0.261)]
+    elif "2023" in path:
+        # 2023 UI: name in right-side card panel
+        #   coordinates from reference image (1317x740):
+        #   x: 970-1160, y: 140-170  ->  x: 71.0-88.1%, y: 18.9-23.0%
+        region = img[int(h * 0.189):int(h * 0.230), int(w * 0.710):int(w * 0.881)]
     else:
         # 2025 UI: ticket banner, player name area
         #   coordinates from reference image (2800x1576):
@@ -113,12 +122,16 @@ def _team_of(text: str) -> str | None:
     return None
 
 
-def ocr_ticket(ticket: np.ndarray) -> str:
+def ocr_ticket(ticket: np.ndarray, invert: bool = False) -> str:
     try:
         import pytesseract
-        big = cv2.resize(ticket, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+        big = cv2.resize(ticket, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
         gray = cv2.cvtColor(big, cv2.COLOR_BGR2GRAY)
-        _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if invert:
+            # White text on dark/gradient background: fixed threshold works better than OTSU
+            _, thresh = cv2.threshold(gray, 160, 255, cv2.THRESH_BINARY_INV)
+        else:
+            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         cfg = f"--oem 1 --psm 6 -c tessedit_char_whitelist={_WHITELIST}"
         raw = pytesseract.image_to_string(thresh, config=cfg)
         text = re.sub(r"[^A-Za-z0-9._]", "", raw.strip())
@@ -185,7 +198,11 @@ def build(save_dir: str, year: int | None = None):
         if t is None:
             print(f"  Warning: no ticket region in {p}")
             continue
-        text = ocr_ticket(t)
+        if "2023" in p:
+            # 2023 has mixed backgrounds — try both and pick whichever gives a result
+            text = ocr_ticket(t, invert=False) or ocr_ticket(t, invert=True)
+        else:
+            text = ocr_ticket(t, invert="2024" in p)
         tickets.append(t)
         valid_paths.append(p)
         ocr_results.append(text)
@@ -303,6 +320,9 @@ def apply_labels(confirm: bool = False):
             new_path = os.path.join(os.path.dirname(old_path),
                                     f"mvp_{safe}{os.path.splitext(old_path)[1]}")
             if old_path == new_path:
+                unchanged += 1
+                continue
+            if not os.path.exists(old_path):
                 unchanged += 1
                 continue
             print(f"  [{'rename' if confirm else 'preview'}] "
