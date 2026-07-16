@@ -6,3 +6,5 @@ temp_mvp.png
 
 __pycache__/
 *.pyc
+
+all_bilibili_dynamic.json
